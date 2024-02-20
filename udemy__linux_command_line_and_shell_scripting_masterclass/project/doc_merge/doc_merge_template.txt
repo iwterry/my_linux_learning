@@ -1,0 +1,5 @@
+Dear <First_Name> <Last_Name>, grab our <Holiday_Specials> while they last!! The Sale lasts from <Begin_Date> through <End_Date>.
+
+Discounts from <Min_Pct>% to <Max_Pct>%
+
+Hurry while supplies last!

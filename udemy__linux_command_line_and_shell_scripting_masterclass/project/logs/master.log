@@ -1,0 +1,84 @@
+Current date: 2023_10_03
+
+Start time: 05:50:00
+
+User: iwterry
+
+Argument list: -l -r
+
+######### Document Merge Process ###########
+
+Starting document merge process at 2023_10_03-05_50_00
+
+End document merge process at 2023_10_03-05_50_00
+
+######## List Users and Groups Process #########
+
+Started list users and groups process at 2023_10_03-05_50_00
+
+Completed list users and groups process at 2023_10_03-05_50_00
+
+######## Sales Aggregation ########
+
+Starting sales aggregation at 2023_10_03-05_50_00
+
+Ended sales aggregation at 2023_10_03-05_50_00
+
+######## Sales Report Pivoting ########
+
+Starting sales report pivoting at 2023_10_03-05_50_00
+
+Ended sales report pivoting at 2023_10_03-05_50_00
+
+Starting disk monitor process at 2023_10_03-05_50_00
+
+File size for disk monitor: 500001 bytes
+
+Deleting file: /home/iwterry/project/disk_monitor/test_file.txt
+
+The file was unable to be deleted
+
+Finished disk monitor process at 2023_10_03-05_50_00
+
+Starting backup and delete process at 2023_10_03-05_50_00
+
+No files to move
+
+Finished backup and delete process at 2023_10_03-05_50_00
+
+Starting search and replace at 2023_10_03-05_50_00
+
+Ended search and replace at 2023_10_03-05_50_00
+
+Starting filter and format report at 2023_10_03-05_50_00
+
+Ended filter and format report at 2023_10_03-05_50_00
+
+Starting report compression at 2023_10_03-05_50%s
+
+Processing file: /home/iwterry/project/filter_and_format/output.rpt
+
+Processing file: /home/iwterry/project/search_and_replace/output.rpt
+
+Processing file: /home/iwterry/project/sales_reports/sales_pivot.rpt
+
+Processing file: /home/iwterry/project/sales_reports/sales.rpt
+
+Processing file: /home/iwterry/project/users_and_groups/reports/users_and_groups.rpt
+
+Finished report compression at 2023_10_03-05_50%s
+
+Starting report copy at 2023_10_03-05_50%s
+
+Copying file /home/iwterry/project/filter_and_format/output.rpt.tar.gz to directory /home/iwterry/project/filter_and_format/backup
+
+Copying file /home/iwterry/project/sales_reports/sales_pivot.rpt.tar.gz to directory /home/iwterry/project/sales_reports/backup
+
+Copying file /home/iwterry/project/sales_reports/sales.rpt.tar.gz to directory /home/iwterry/project/sales_reports/backup
+
+Copying file /home/iwterry/project/search_and_replace/output.rpt.tar.gz to directory /home/iwterry/project/search_and_replace/backup
+
+Copying file /home/iwterry/project/users_and_groups/reports/users_and_groups.rpt.tar.gz to directory /home/iwterry/project/users_and_groups/reports/backup
+
+Finished report copy at 2023_10_03-05_50%s
+

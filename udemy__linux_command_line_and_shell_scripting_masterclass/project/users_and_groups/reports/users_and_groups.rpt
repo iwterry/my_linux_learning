@@ -1,0 +1,36 @@
+*************************
+
+Processing group file /home/iwterry/project/users_and_groups/server_1.group for server: server_1
+
+*************************
+
+Listing Users and their Groups
+
+group_1: user_1,user_2,user_3,user_4,user_5
+
+group_2: user_6,user_7,user_8,user_9,user_10,user_1
+
+group_3: user_11,user_12,user_13,user_14,user_15
+
+group_4: user_16,user_17,user_18,user_19,user_20,user_1
+
+group_5: user_21,user_22,user_23,user_24,user_25,user_1
+
+*************************
+
+Processing group file /home/iwterry/project/users_and_groups/server_2.group for server: server_2
+
+*************************
+
+Listing Users and their Groups
+
+group_1_2: user_1_2,user_2_2,user_3_2,user_4_2,user_5_2
+
+group_2_2: user_6_2,user_7_2,user_8_2,user_9_2,user_10_2,user_1_2
+
+group_3_2: user_11_2,user_12_2,user_13_2,user_14_2,user_15_2,user_1_2
+
+group_4_2: user_16_2,user_17_2,user_18_2,user_19_2,user_20_2
+
+group_5_2: user_21_2,user_22_2,user_23_2,user_24_2,user_25_2
+

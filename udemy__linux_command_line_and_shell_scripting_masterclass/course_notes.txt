@@ -1,0 +1,794 @@
+lock root account
+	- sudo passwd -l root
+unlock root account
+	- sudo passwd root
+delete group
+	- sudo delgroup <group-name>
+		- NOTE: there must be no user that has a primary group as <group-name>
+
+remove a shell variable/function
+	- unset -v <variable-name>
+	- unset -f <function-name>
+enable (set) and disable (unset) a shell option
+	- shopt -s <variable-name>
+		- enables/sets
+	- shopt -u <variable-name>
+		- disables/unsets
+export a shell variable/function so that it can be used in the current shell process and child shell processes
+	- export <variable-name>[=<value>]
+	- export -f <function-name>
+
+
+parent/child script
+	- when in the parent script, "./child_script.sh" is used, the child script can only access (and not change) its parent's exported functions and variables (which uses "export" keyword)
+	- when in the parent script, "source child_script.sh" is used, then the child and parent script can access and change each other variables and functions
+		- NOTE: only when no arguments are passed to the child script will the child script have the same arguments that the parent script has (which in this case $1, $2, ..., would be the same in both script)
+		- NOTE: $0 is the same for both script and that value is for the parent script (such as ./parent_script.sh)
+		- NOTE: if the keyword "exit" is executed in the sourced child script, then the parent script also terminates
+
+
+getting help
+	- tldr
+		- NOTE: may not be installed on system already
+	- man
+	- whatis
+	- help
+	- apropos
+	- http://bropages.org/
+
+vim editor
+	- vi has two modes: command mode and insert mode
+		- command mode: used for copying, pasting, deleting and navigating text
+			- NOTE: the default mode on entering the editor is the command mode
+		- insert mode: used for entering text
+		- NOTE: you can enter "insert mode" from "command mode" by pressing the "i" key; you can enter "command mode" from "insert mode" by pressing the "esc" key
+	- ways of quiting (when in command mode)
+		- ":q" (will quit only if no changes were made; otherwise, you will receive a prompt and will not be able to quit)
+		- ":q!" (will be able to quit and no changes will be saved)
+		- ":wq" (save and quit)
+		- ":wq!" (save and quit; force write in case of read-only files)
+			- NOTE: vim is able to write to a readonly file in one of two scenarios:
+				- the user is the owner of the file
+				- the user has write permissions in the directory that holds file
+	- navigation
+		- j (move cursor down one line)
+			- <number> + j (move cursor down nth-number of times from where it currently is)
+		- k (move cursor up one line)
+			- <number> + k (move cursor up nth-number of times from where it currently is)
+		- l (move cursor right one character)
+			- <number> + l (move cursor right nth-number of times from where it currently is)
+		- h (move cursor left one charater)
+			- <number> + h (move cursor left nth-number of times from where it currently is)
+		- <nummber> + gg (or use <number> + G) (move cursor to the nth line from the top)
+		- G (move cursor to the last line in the file)
+		- $ (move cursor to the end of the line)
+		- 0 (move cursor to the start of the line)
+		- left_ctrl + f (scroll forward one page)
+		- left_ctrl + b (scroll backward one page)
+		- :<number> (to go the nth line in the ile)
+	- undo/redo a change
+		- u (undo change)
+		- left_ctrl + r (redo change)
+	- deleting (also cutting)
+		- dd (delete current line that cursor is on)
+			- <number> + dd (delete nth-number of lines)
+		- x (delete the character the cursor is on)
+			- <number> + x (delete nth-number of characters)
+	- copying/pasting
+		- yy (copy line cursor is on)
+			- <number> + yy (copy nth-number of lines)
+		- p (pasting)
+	- learn more about vim using ":help"
+
+shell expansion
+	- expansion: the shell processes special characters contained in a command before it processes the entire command as a whole
+	- types of expansion
+		- brace expansion
+			- in brace expansion multiple text strings are contained within a pattern enclosed in braces
+			- examples
+				- mkdir files_{2020..2023}_{a,c}
+		- tilde expansion
+			- the tilde character (~) when used at the beginning of a word expands in the home directory of the named user
+			- example
+				- echo ~iwterry
+					- outputs the home directory of user "iwterry" (/home/iwterry) if the user exists; otherwise, "~iwterry" is outputted.
+		- parameter expansion
+			- in paramater expansion the value of a variable which is set is processed to give a new value
+			- examples
+				var='this is a test string';
+				echo ${var:1:3} 	# => his (NOTE: this is get the first 3 characters starting at index 1; the 3 is the length and 1 is the index to start at)
+				echo ${#var} 		# => 21   (NOTE: this is the length of the string)
+				echo ${var/this/that}	# => that is a test string (NOTE: the first occurrence of the "this" was replaced with "that" in the value of variable var)
+		- command substitution
+			- in command substitution the output of a command is used to replace the command
+			- examples
+				- echo $(pwd)
+				- ls -l $(which mv)
+				- var=$(date); echo $var
+		- arithmetic expansion
+			- in arithmetic expansion the arithmetic expression is evaluated and then substituted
+			- examples
+				- echo $(( 2 + 2 )) # => 4
+				- var=$(( 2 + 3 )); echo $var # => 5
+				- x=3; y=5; echo $(( x + y )) # => 8
+				- y=6; (( y += 1 )); echo $y # => 7
+		- process substitution
+			- process substitution allows the input or output of a command to appear as file; this helps to minimize the number of operations when comparing files
+			- example
+				- diff <(cat file_test_1.txt) <(cat file_test_2.txt)
+					- the output of "cat file_test_1.txt" and "cat file_test_2.txt" are treated as a files, and then we comparing the differences between the files
+		- word splitting
+			- when a string variable is expanded, the default seperator is either space, tab, or newline. These are the boundaries used to separate words in the string which can now be listed as an array
+			- example
+				var='val1 val2 val3'
+				for word in $var; do echo $word; done # prints 'val1', 'val2', 'val3' with each on separate line
+			- NOTE: the word splitting can be prevented by setting the default separator to null (i.e., IFS=)
+				
+		- filename expansion
+			- wildcards are used to enable filename expansion
+				- match 0 or more characters
+					- example: ls file_*.txt
+				- match only 1 character
+					- example: ls file_?.txt
+				- match within a range
+					- example: ls file_[0-4].txt 
+					- NOTE: you can also get the same result using brace expansion: ls file_{0..4}.txt
+			- the following is taken from part of manpages for bash:
+				-  After  word  splitting,  unless  the -f option has been set, bash scans each word for the characters *, ?, and [.  If one of  these  characters appears, and is not quoted, then the word is regarded as a pattern, and replaced with an alphabetically sorted list of filenames  matching  the pattern.
+		- quotes
+			- quotes are used to prevent unwanted expansions
+			- example:
+				echo "$USER" # => outputs the value of the variable USER
+				echo '$USER' # => $USER
+			- NOTE: single quotes suppresses the expansion
+			- if i wanted to print out $100, i could not just do the following: echo $100
+			  	- i would need to do the following to prevent the unwanted expansion: echo '$100'
+
+shell scripting
+	- special script variables (see "special parameters" section in manpages for bash for more info)
+		- $0
+			- the name of the bash script
+		- $1, $2, ..., $9
+			- the first 9 arguments to the bash script
+			- NOTE: if you have more than 9 arguments, then the other arguments will need to use the curly braces notation: ${10} (for the tenth argument)
+		- $#
+			- the number of arguments were passed to the bash script
+		- $@
+			- all the arguments supplied to the bash script
+		- $?
+			- the exit status of the most recently run process
+			- NOTE: any exit status other than 0 represents an error
+		- $$
+			- the process id of the current script 
+	- "shift" is a shell built-in that is useful for shifting the positional arguments; see "help shift" for more info
+	- variables can either be local or global; local variable can only be defined within in a function and must use the keyword "local" when declaring the variable; otherwise, all variables are global.
+	- creating comments
+		- single line comments start with # (other than shebang line)
+		- multi line comments can be created using heredocs
+			- different examples
+
+			<<COMMENT
+			echo 'this will not execute because it is inside a comment'
+			COMMENT
+			
+			<<'ANOTHER_COMMENT'
+			echo 'this will not execute because it is inside a comment'
+			ANOTHER_COMMENT
+			
+			<< 'a_different_comment'
+			echo 'this will not execute because it is inside a comment'
+			a_different_comment
+	- creating functions
+		- example
+		func() {
+		  local greet='hello'
+  		  echo "$greet $1"
+                }
+
+                func 'world'
+	- the "read" command
+		- can be used to read a single line from standard input
+		- word splitting occurs based on the value of the special variable IFS
+		- examples:
+			- read my_var
+				- NOTE: give the variable "my_var" the value entered; so to access the value, use "$my_var"
+			- read var1 var2 var3
+				- example
+				  IFS="," # word splitting based on commas
+				  echo "one,two,three" | while read var1 var2 var3; do
+				    echo $var1 # => one
+				    echo $var2 # => two
+				    echo $var3 # => three
+				  done
+				 
+			- read -p "Enter a value: " val
+				- NOTE: give the variable "val" the value entered; so to access the value, use "$val"
+				- the "-p" is for the prompt so that the user will be given a prompt
+			- read -s my_sensitive_data
+				- NOTE: give the variable "my_sensitive_data" the value entered; so to access the value, use "$my_sensitive_data"
+				- the "-s" will keep what the user types from echoing back so you will no be able to see what you typing as you are typing; good for things like entering passwords.
+		- see "help read" for more info
+	- braces, brackets, and parentheses
+		- single parentheses
+			- the commands executed within single parentheses are run within a subshell and a single exit code is returned
+			- example
+			  var='outside'
+			  echo $var			# => outside
+			  ( var='inside'; echo $var ) 	# => inside
+			  echo $var 			# => outside 
+			- example
+			 (echo -n "hello"; echo -n " "; echo -n "world") # => hello world
+			- NOTE: the space after the opening parenthesis and the space before the closing parenthesis are not necessary
+		- double parentheses
+			- used to perform mathematical operations when there is no return value; the value of the variable can be modified within the double parenthesis;
+				- NOTE: the exit code is 0 if the result within double parenthesis is non-zero; otherwise, the exit code is 1
+			- example
+			  i=1
+			  (( i + 1 ))
+                          echo $? 						# => 0
+			  echo $i 						# => 1
+			  (( i -= 1 ))
+			  echo $? 						# => 1
+			  echo $i 						# => 0
+
+			- example
+			  (( var1 = 2, var2 = 3, var3 = var1 + var2 ))
+			  echo $var3 						# => 5
+			- NOTE: the space after the opening double parentheses and the space before the closing double parentheses are not necessary
+
+		- dollar sign ($) with single paretheses
+			- the command inside is executed in a subshell and the value is utilized within the containing string
+			- example
+				- echo "my current working directory is $(pwd)"
+			- example
+				  var=10
+				  var=$( inner_var=3; echo $inner_var ) # NOTE: there is no output
+				  echo $var # => 3
+				  - NOTE: instead of output things to standard output, the output is assigned to the variable or containing string (as in the first example)
+			- NOTE: the space after the opening parenthesis and the space before the closing parenthesis are not necessary
+		- dollar sign ($) with double parentheses
+			- similar to without the dollar sign except that a value is returned the containing string
+			- examples
+				- echo "5 + 2 = $(( 5 + 2 ))" # => 5 + 2 = 7
+				- var=$(( 10 / 2 )); echo $var # => 5
+			- NOTE: the space after the opening double parentheses and the space before the closing double parentheses are not necessary
+		- single square braces
+			- these are used to evaluate an expression to true or false; these are mainy used in checking for file/directory existence or comparing strings and integers
+			- examples
+				- [ -f test.sh ] && echo true # output 'true' only if file 'test.sh' is a regular file and exists
+				- a=10; b=20; [ $a -eq $b ] && echo true # NOTE: no output since 10 does not equal 20
+				- a=10; b=20; [ $a -ne $b ] && echo true # => true
+			- NOTE: the space after the opening square bracket and the space before the closing square bracket are necessary
+		- double square braces
+			- these are used similar to single square braces, but there are differences:
+				- double square brackets prevent word splitting
+					- example
+					  var='hello world'
+					  [ $var = $var ] && echo true # NOTE: an error occurs with message "bash: [: too many arguments"
+					  [[ $var = $var ]] && echo true # => true
+				- double square brackets allow wildcard expansion and ?
+					- example
+					  [ Hello = H* ] && echo true # NOTE: there is no output
+					  [[ Hello = H* ]] && echo true # => true
+					- example 
+					  [ He = H? ] && echo true # NOTE: there is no output
+					  [[ He = H? ]] && echo true # => true
+				- using ">" and "<" operators when comparing strings
+					- example
+					  [ 'a' < 'b' ] && echo true # NOTE: an error occurs with the mmessage "bash: b: No such file or directory"
+					  [[ 'a' < 'b' ]] && echo true # => true 
+			- NOTE: the space after the opening double square brackets and the space before the closing double square brackets are necessary
+		- curly braces
+			- usage 1: for expansion and ranges
+				- example
+			  	  echo {1..4} # => 1 2 3 4
+			- usage 2: for commands to be executed within the same shell (rather than subshell) and a single exit code is returned
+				- example
+				  { ls; }
+				- example 
+				  { var=2; echo $var; } # => 2
+				  echo $var # => 2, this is because the command executed above is in the same shell as this command being executed
+				- NOTE: each command must be followed by a semicolon (even if it is the last command or only command)
+			- NOTE: there should be no space after the opening curly brace and no space before the closing curly brace
+		- dollar sign ($) with curly braces
+			- these are used or variable interpolation to separate the expanded variable from adjacent text
+			- example
+			  var="Hello "
+			  echo ${var}World # => Hello World
+		- NOTE: there should be no space after the opening curly brace and no space before the closing curly brace
+	- file descriptor
+		- the input or output of any unix process is considered a file
+		- the file descriptors are
+			- 0 (stdin)
+				- reads from our input file (such as keyboard file)
+			- 1 (stdout)
+				- writes to our output file (such as screen or terminal)
+			- 2 (stderr)
+				- writes to our error file which is redirected to our output file (such as screen or terminal)
+		- redirections
+			- the stderr can be redirected to the same location as stdout
+				- examples: 
+					- ls file_exists.txt file_not_exists.txt 2>&1
+						- NOTE: the ampersand (&) is needed; otherwise, stderr is redirected to a file called "1" instead of stdout
+					- ls file_exists.txt file_not_exists.txt 1> /tmp/output.log 2>&1
+						- NOTE: this is shorthand for doing the following: ls file_exists.txt file_not_exists.txt 1> /tmp/output.log 2> /tmp/output.log
+					- ls file_exists.txt file_not_exists.txt &> output.log
+						- NOTE: this is a shorthand for doing the following: ls file_exists.txt file_not_exists.txt 1> /tmp/output.log 2>&1
+			- NOTE: "ls some_dir_or_file 1> output.txt" is the same as "ls some_dir_or_file > output.txt" as the "1" is not needed before ">"
+			- the stdin can be redirected
+				- example
+					- cat 0< input_file.txt (or cat < input_file.txt)
+	
+arrays 
+	- bash has two types of array: 
+		- indexed arrays
+			- has indices that are integers
+			- can be declared using the "declare" keyword with the "-a" option
+				- example:
+				  declare -a my_indexed_array
+				  my_indexed_array[0]="world"
+				  my_indexed_array[1]=2
+			- NOTE: this is 0-based indexing
+			- there is an alternative way to create indexed arrays
+				- example
+				  my_indexed_array=()
+				  my_indexed_array[0]="world"
+				  my_indexed_array[1]=2
+				  echo ${my_indexed_array[0]} # => world
+				  echo ${my_indexed_array[1]} # => 2
+				- example
+				  my_index_array=( "world" 2 )
+				  echo ${my_indexed_array[0]} # => world
+				  echo ${my_indexed_array[1]} # => 2
+		- associative arrays
+			- has keys that are strings
+			- must be declared using the "declare" keyword with the "-A" option
+				- example:
+				  declare -A my_associative_array
+				  my_associative_array["hello"]="world"
+				  my_associative_array["apple"]=2
+				  echo ${my_associative_array["hello"]} # => world
+				  echo ${my_associative_array["apple"]} # => 2
+
+	- get all values of an array using @
+		- example
+		  my_array=( 25 10 30 )
+	  	  echo ${my_array[@]} # => 25 10 30
+		  echo ${my_array} # => 25
+		  # NOTE: using the name of the array gets you the first element in the array
+	- get length of array using # and @
+		- example:
+	  	  my_array=( 1 3 2 6 4 )
+	  	  echo ${#my_array[@]} # => 5
+	- get a slice or subset of array
+		- example:
+	  	  my_array=(3 6 7 8 43 7 4 42)
+	  	  echo ${my_array[@]:2:5} # => 7 8 43 7 4
+	 	  # NOTE: take 5 elements starting at index 2
+	- copy array
+		- example
+		  my_array=("hello" "to" "you")
+		  copy_of_my_array=(${my_array[@]})
+		  echo ${copy_of_my_array[@]} # => hello to you
+	- delete an element in array
+		- example
+		  my_array=(19 10 5 2)
+		  unset my_array[2]
+		  echo ${#my_array[@]} # => 3
+		  echo ${my_array[@]} # => 19 10 2
+		  echo ${my_array[2]} # you will get nothing
+	          # NOTE: elements at indices 0, 1, and 3 are the same, but nothing will be at index 2
+		  my_array=(${my_array[@]}) # copy array
+		  echo ${#my_array[@]} # => 3
+		  echo ${my_array[@]} # => 19 10 2
+		  echo ${my_array[2]} # => 2
+	- append to end of array
+		- example:
+		  my_array=(1 5 4)
+		  echo ${my_array[@]} # => 1 5 4
+		  my_array+=(7)
+		  echo ${my_array[@]} # => 1 5 4 7
+		- example:
+		  my_array=(1 5 4)
+		  echo ${my_array[@]} # => 1 5 4
+		  my_array=(${my_array[@]} 7)
+		  echo ${my_array[@]} # => 1 5 4 7
+	- looping over an array's elements
+		- example
+		  my_array=( "hello" "to" "me" )
+		  for element in "${my_array[@]}"; do echo "${element}"; done 
+	- looping over an array's indices (or keys for associative arrays)
+		- example
+		  my_array=( "hello" "to" "me" )
+		  for indx in "${!my_array[@]}"; do echo "${indx}"; done;	
+			  
+	
+iterations
+	- for loop
+		- example
+		  my_arr=( 1 2 3 4 5 )
+		  for element in ${my_arr[@]}; do
+		    echo "element is $element"
+		  done
+		- example
+		  limit=10
+		  for (( i = 1; i <= limit; i += 1 )); do
+		    echo "i = $i"
+		  done
+	- while loop
+		- example
+		  i=0
+		  while [[ $i < 10 ]]; do
+		    echo $i
+		    (( i += 1 ))
+		  done
+
+conditionals
+	- if statement
+		- the if statement can be usedd with
+			- single parentheses ( )
+				- use to evaluate a set of conditioons within a sub shell
+				- if the set of conditions executes successfully then the commands in the "if" clause are executed
+				- example
+
+				  if ( grep 'iwterry' /etc/passwd ); then
+				    echo 'User id found'
+				  else
+				    echo 'User id not found'
+				  fi
+
+			- double parentheses (( ))
+				- used evaluate numerical conditions
+				- example
+
+				  var1=100; var2=20
+				  if (( var2 += 20, var1 > var2 )); then
+				    echo 'var1 > var2'
+				  else
+				    echo 'var1 <= var2'
+				  fi
+
+			- single brackets [ ]
+				- used to compare strings and numbers
+				- example
+				  
+				  if [ 3 -lt 2 ]; then
+  				    echo "1 < 2"
+				  fi
+
+			- double brackes [[ ]]
+				- used to compare strings and numbers
+				- in comparison to the single brackets, the double brackets have more enhanced features and allow for numeric operators in comparison and have additioal features such as wildcards
+				- example
+
+				  i=0
+				  if [[ $i -eq 2 ]]; then
+				    echo 'equal to 2'
+				  elif [[ $i -gt 5 ]]; then
+				    echo 'greater than 5'
+				  else
+				    echo 'not equal to 2 nor greater than 5'
+				  fi
+
+
+	- case statement
+		- used instead of the if statement when multiple branches depend on the value of a single variable
+		- example
+		  case $color in
+		    red)
+		      echo 'Red is good color'
+		    ;;
+		    green)
+		      echo 'Green is a fine color'
+		    ;;
+		    blue)
+		      echo 'Blue is nice'
+		    ;;
+		    *)
+		      echo 'Whatever color you like will suit you well'
+		    ;;
+		  esac
+		- example
+		  case $color in
+		    red) echo 'Red is good color' ;;
+		    green) echo 'Green is a fine color' ;;
+		    blue) echo 'Blue is nice' ;;
+		    *) echo 'Whatever color you like will suit you well' ;;
+		  esac
+
+regular expressions
+	- SEE SCRIPT
+
+grep
+	- searches a file for a pattern of characters and returns the lines that match.
+	- NOTE: grep supports both basic and extended regular expressions
+  		- in extended regular expressions, you can make use of the meta-characters ?, +, {, |, (, and ) to get regular expression functionality; to do the same with basic regular expressions, you will need to escape these meta-characters with a backslash: \?, \+, \{, \|, \(, and \).
+	- NOTE: by default, grep uses basic regular expressions; to use extended regular expressions in grep, use the "-E" option
+	- examples
+		- grep "abc" file1.txt
+			- get all lines in file that contains "abc" as a substring
+			- NOTE: the match is case sensitive; use the "-i" option to get case insensitive matches
+		- grep -i "abc" file1.txt
+			- the "-i" means case insensitive; without "-i" the matches are case sensitive only
+			- "abc", "ABC", "aBC" and "aBc" are possible matches
+		- grep -l "abc" file1.txt
+			- get the lines that exactly match (in this, this corresponds to using regular expression "^abc$")
+		- grep -v "abc" file1.txt
+			- the "-v" mean inverse
+			- get all lines in the file that does not contain "abc" as a substring
+		- grep -c "abc" file1.txt
+			- the "-c" is count
+			- get the number of lines that match (instead of getting the lines themselves)
+		- grep -n "abc" file1.txt
+			- the "-n" means line numbers 
+			- get lines that match as well as the line number in the file
+		- grep -q "abc" file1.txt
+			- the "-q" means suppress (or keep quiet) the normal output
+		- grep -r "abc" dir1
+			- the "-r" means recursively search; so grep will search through all files in directory "dir1" (and any of its subdirectories) that have lines matched by regular expression 
+		- grep -E "abc" file1.txt
+			-the "-E" means the grep command is interpeting the regular expression as an extended regular expression, allowing the use of "?", "{<min-num>,}", "{,<max-num>}", "{<min-num>,<max-num>}", and "{<num>}"
+				- examples
+					- grep -E "ab?c" file1.txt
+					- grep -E "ab{2}c" file1.txt
+					- grep -E "ab{2,5}c" file1.txt
+					- grep -E "ab{2, }c" file1.txt
+					- grep -E "ab{,5}c" file1.txt
+		- grep -f pattern_file.txt file1.txt
+			- the "-f" means that we are using a file (in this case "pattern_file.txt") that will contain the patterns used for searching for lines in others files (in this cas "file1.txt") that match the pattern; each pattern is a separate line within the pattern file.
+		- grep -w "abc" file1.txt
+			- this is for matching whole words
+			- a word can consist of only the underscore character, uppercase and lowercase alphabetical characters, and numerical digits; no other characters are allowed
+			- "abc" is a word, "abc9" is another word, and "abc_" is another word
+			- a non-word character is character not allowed in a word
+			- for line to match, both of the following must be true:
+				- no characters at all precedes the word "abc" or at least one non-word character preceding the word "abc"
+				- no characters at all follows the word "abc" or at least one non-word character following the word "abc" 
+			 
+	- grep can be useful in shell scripts
+		- check for a true/false condition
+			- example
+			  if ( grep "abc" file1.txt ); then
+			    echo "found a match"
+			  else
+			    echo "no matches found"
+			  fi
+			- NOTE: grep has exit status 0 if a matches is found; if no error but no match found, exit status is 1
+		- loop through the lines returned as matches
+			- example
+			  grep "abc" file1.txt | while read matched_line; do echo "line: $line"; done
+
+awk
+	- is a scripting language used primarily for data extraction based on patterns and generating formatted reports from raw data
+	- SEE SCRIPT FILES
+
+sed (stream editor)
+	- is mainly used for searching and replacing text in files
+	- NOTE: sed supports both basic and extended regular expressions
+  		- in extended regular expressions, you can make use of the meta-characters ?, +, {, |, (, and ) to get regular expression functionality; to do the same with basic regular expressions, you will need to escape these meta-characters with a backslash: \?, \+, \{, \|, \(, and \).
+	- NOTE: by default, sed uses basic regular expressions; to use extended regular expressions in sed, use the "-E" option
+	- search and replace text
+		- examples
+			- sed "s/abc/def/" sed_file1.txt
+				- replace the first occurrence of "abc" in each line with "def" in file sed_file1.txt
+				- the "s" means search and replace
+			- sed -e "s/abc/def/" -e "s/123/456/" sed_file1.txt
+				- replace the first occurrence of "abc" with "def" in each line file sed_file1.txt
+				- replace the first occurrence of "123" with "456" in each line file sed_file1.txt
+				- the "-e" allows us to combine multiple expressions 
+			- sed "s/abc/def/2" sed_file1.txt
+				- replace the second occurrence of "abc" in each line with "def" in file sed_file1.txt
+				- the "2" means the second occurrence in a line
+			- sed "s/abc/def/g" sed_file1.txt
+				- replace the all occurrences of "abc" in each line with "def" in file sed_file1.txt
+				- the "g" means global 
+			- sed "3s/abc/def/" sed_file1.txt
+				- replace the first occurrence of "abc" in the third line only with "def" in file sed_file1.txt
+				- the "3" means the third line
+			- sed "2,4s/abc/def/" sed_file1.txt
+				- replace the first occurrence of "abc" in the second, third, and fourth line only with "def" in file sed_file1.txt
+				- the "2,4" means the lines 2 through 4 (inclusively)
+			- echo "1234567890" | sed -E "s/(^[0-9]{3})([0-9]{3})([0-9]{4})/(\1) \2-\3/"
+				- NOTE: the output of this is "(123) 456-7890"
+				- the "-E" means use extended regular expression
+				- NOTE: without the "-E", the the parentheses between the first forward slash and the second forward slash would need to be escaped with the back slash.
+				- the parentheses before the first forward slash and the second forward slash are used for capture groups
+					- (^[0-9]{3}) is one capture group and we use \1 to get what this matched (which in this case is 123)
+					- ([0-9]{3}) is another capture group and we use \2 to get what this matched (which in this case is 456)
+					- ([0-9]{4}) is another capture group and we use \3 to get what this matched (which in this case is 7890)
+			- NOTE: no changes were made to sed_file1.txt in these examples 
+	- delete lines (from standard output)
+		- examples 
+			- sed "2d" sed_file1.txt
+				- show all lines except the second line in file sed_file1.txt
+				- the "2" means second line
+				- the "d" means delete
+			- sed "2,4d" sed_file1.txt
+				- show all lines except lines 2 through 4 (inclusively) in file sed_file1.txt
+				- the "2,4" means the lines 2 through 4 (inclusively)
+			- sed "/abc/d" sed_file1.txt
+				- show all lines except lines that contain "abc" in file sed_file1.txt
+				- "/abc/" is a regular expression
+			- sed -e "/abc/d" -e "/xyz/d" sed_file1.txt
+				- show all lines except lines that contain "abc" or "xyz" in file sed_file1.txt
+				- the "-e" allows us to combine multiple expressions
+			- NOTE: no changes were made to sed_file1.txt in these examples
+	- print lines
+		- examples 
+			- sed -n "2d" sed_file1.txt
+				- print only the second line in file sed_file1.txt
+				- the "2" means second line
+				- the "p" means print
+				- the "-n" means to suppress the printing of all lines in sed_file1.txt; without "-n" all lines in sed_file1.txt will get printed but the second line would be printed twice
+			- sed -n -e "2p" -e "5p" sed_file1.txt
+				- print only line 2 and line 3 in file sed_file1.txt
+				- the "-e" allows us to use mulple expressions
+			- sed -n "2,4p" sed_file1.txt
+				- print only lines 2 through 4 (inclusively) in file sed_file1.txt
+				- the "2,4" means the lines 2 through 4 (inclusively)
+			- sed -n "/abc/p" sed_file1.txt
+				- print only lines that contain "abc" in file sed_file1.txt
+				- "/abc/" is a regular expression
+			- NOTE: no changes were made to sed_file1.txt in these examples
+	- read only n lines of a file
+		- examples
+			- sed "3q" sed_file1.txt
+				- read up to the third line in the file and output the first three lines  
+			- echo -e "hello\nto\nthe\nworld\nas\nwe\nknow" | (sed -u "3q"; sort)
+				- read and output the first three lines and then output the other lines sorted
+				- using sed -u "3q", sed will only deal with first three lines; while the next coommand (in this case "sort") deals will all the other lines but the first three
+				- the output is the first three lines do not change while the other lines are sorted
+					- output we get:
+					  hello
+					  to
+					  the
+					  as
+					  know
+					  we
+					  world
+	- make permanent changes to input file
+		- example
+			- sed -i "2d" sed_file1.txt
+				- "-i" means changes are done in-place (so the file is modified) 
+			
+
+utilty commands
+	- cut
+		- used to extract columns from piped inputs or files based on delimeters
+		- examples
+			- cut -d ',' -f 1-3 file1.csv
+				- "-d" is for the delimeter (we are saying that the file1.csv is comma deliminated)
+				- "-f" is for the fields (we are saying we want first, second, and third fields (or columns in file1.csv)
+				- NOTE: by default the delimeter is a tab
+	- sort
+		- example
+			- sort -t ',' -k 2 file1.csv
+				- "-t" means delimeter (and we are saying that file1.csv is comma deliminated)
+				- "-k" means we are sorting by the seconds order (in ascending order)
+			- sort -t ',' -k 2 -u file1.csv
+				- "-u" means show only the first occurrence of lines (and thus removes duplicate lines) so that each line is shown only once
+			- sort --month-sort months.txt
+				- sort by months spelled out (abbreviated like (jun or jul) or not (june or july))
+			- sort --numerical-sort -r numbers.txt
+				- numerically sort (using --numerical-sort) in descending order (using -r) 
+				- the "-r" reverses the sorting order (which is why we are now sorting in descending order instead of the default ascending order)
+		- NOTE: another useful option that sort has is "--human-numeric-sort"  
+				
+	- uniq
+		- is used with the "sort" command to eliminate duplicate lines (this is because uniq requires the lines to be sorted in order to remove duplicates)
+			- NOTE: while the "sort" command itself can be used to show the first occurrence of lines, the "uniq" command does that by default, but the "uniq" command can also be used 
+				- to output the number of occurrences of a line along with the first occurrence of the line (using -c)
+				- to output only the first occurrence of duplicate lines (using -d)
+				- to output only the unique lines (using -u)
+	- dirname
+		- exammple: dirname /hello/to/me # => /hello/to
+			- NOTE: the directory or file "/hello/to/me" does not need to exist for this to work
+	- basename
+		- example: basename /hello/to/me # => me
+			- NOTE: the directory or file "/hello/to/me" does not need to exist for this to work
+		- example: basename /hello/world/file.txt .txt #=> file
+			- NOTE: the second argument to "basename" is the suffix and adding this argument means we can remove the suffix
+
+
+
+
+
+cron
+	- the cron utility is used to schedule jobs to run at fixed intervals
+	- crontab is short for "cron table" and is a table used to list all the scheduled cron jobs
+	- common crontab commands
+		- crontab -l
+			- list the crontab for the user
+		- crontab -e
+			- edit the crontab
+			- provides an initial choice of an editor
+			- NOTE: you can change the choice of editor using "select-editor" command
+		- crontab -r
+			- remove the crontab
+		- crontab -v
+			- display the last time edited
+	- NOTE: cron jobs are stored in the directory /var/spool/cron/crontabs/
+	- crontab format
+		- <minute> <hour> <day-of-month> <month> <day-of-week>  <command-to-be-executed>
+			- minute
+				- 0 through 59
+				- * means every minute
+			- hour
+				- 0 through 23
+				- * means every hour
+			- day of month
+				- 1 through 31
+				- * means every day of month
+			- month
+				- 1 through 12
+				- Jan, Feb, Mar, Apr, May, ...
+				- * means every month
+			- day of week
+				- 0, 1, 2, 3, 4, 5, 6
+				- Sun, Mon, Tue, Wed, Thu, Fri, Sat
+				- * means every day of week
+		- NOTE: view an online crontab generator to get better help at doing thing right
+			- https://crontab.guru
+
+- getops
+	- SEE SCRIPT	
+
+- processing input
+	- script input is processed using the following options:
+		- using command-line arguments to the script
+		- read arguments using the "read" command
+		- read a file line by line using a loop
+			- example 1
+			  cat file1.txt | while read line; do
+			    echo ${line}
+			  done
+
+			- example 2
+			  while read line; do
+			    echo ${line}
+			  done < file1.txt
+		- process the parameters using the "getopts" command
+
+processing output
+	- output to stdout
+		- example: echo "hello world"
+	- output can be piped into a file using redirection
+		- example: echo "hello world" > file1.txt
+		- example: echo "hello world" >> file1.txt
+			- NOTE: the ">>" means to append to a file where as ">" means to overwrite a file
+	- output can both to stdout as well as to a file simultaneously using the "tee" command
+		- example: echo "hello world" | tee file1.txt
+		- example: echo "hello world" | tee -a file1.txt
+			- NOTE: the "-a" means to append to (where as the default overwrite) a file
+	- send stdout and stderr to the same file using redirection with &>
+		- example: ls -l file_does_not_exist.txt file_exists.txt &> file_log.txt
+
+
+find
+	- examples
+		- find my_dir_to_begin_the_search -name some_pattern_to_search_for
+			- example:
+				- find . -name "*.txt"
+					- search current directory (.) for any types of files that end in .txt
+			- the "-name" option will match case sensitively on the basename of files (including directories and regular files)
+			- NOTE: to match basenames case insensitively, use "-iname" instead of "-name"
+			- NOTE: to match the path instead of the basename, use "-path" instead of "-name"
+		- find my_dir_to_begin_the_search -not -path some_pattern_to_search_for
+			- using the "-not", we will get results that do not match the pattern "some_pattern_to_search_for"
+			- NOTE: an alternative to using -not is \!
+				- NOTE: there is a need to escape the ! when in the shell environment
+		- find my_dir_to_begin_the_search -type <file-type>
+			- the "-type" is for returning results based on a particular file type (for example, "f" is for regular file and "d" is for directory)
+		
+		- find my_dir_to_begin_the_search -maxdepth <number>
+			- list down to the nth-level subdirectory in directory "my_dir_to_begin_the_search" but do not explore (or list the contents of) the nth-level subdirectory
+		- find my_dir_to_begin_the_search -name some_pattern_to_search_for -exec <command-to-execute> \;
+			- the "\;" is used tell the "find" command that we have finished. Note that the semicolon needs to be escaped witht the backslash
+			- the "-exec" is used to so that a command can be executed on each match obtained from "find"
+				- to access the match found by "find" inside your command use {} surrounded in qoutation marks or escaped with backslash
+		
+
+		- find 
+
+pre allocate a file size for a file
+	- fallocate -l <size-in-bytes> <file-name>

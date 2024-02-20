@@ -1,0 +1,1147 @@
+file hierarchy (FHS)
+	- NOTE: you can use "man hier" or "man file-hierarchy" to learn more about the file system hierarchy in linux
+
+
+partition tables and firmware
+	- let's say i have a new disk and have some data that i want to store on the disk; i cannot just simply store the date on the disk without formatting the disk first; however, before the disk can be formatted, we need a partition table
+		- 2 styles of partition tables: MBR vs GPT
+			- MBR (master boot record)
+				- it is older and has more compatibility than GPT
+				- it is limited features compared to GPT
+				- the disk is expected to be formatted into groupings (or chunks) of 512 bytes
+				- the first chunk 512 bytes is where the master boot record resides and is known as the first sector
+				- limitations
+					- only supports disk sizes up to 2 terabytes
+					- only have up to four partitions on a disk
+			- GPT (GUID partition table) where GUID stands for globally unique identifier
+				- a disk can support up to 128 partitions
+				- can support disk sizes up to 1 zetabyte
+				- limitations
+					- not so compatible with BIOS (basic input/output system), but MBR is
+	- NOTE: BIOS is a firmware that perform checks (as the computer is turned on) on the hardware to make sure everything works okay
+		- BIOS has been replaced by UEFI (unified extensible firmware interface)
+		- UEFI advantages
+			- allows for invoking concurrency
+			- has secure boot (to guard against many security attack vectors)
+
+external hardware
+	- examples: usb, PCI (peripherial component interface)
+		- PCI is older
+	- commands
+		- lspci
+			- list all PCI devices
+		- lsusb
+			- list all USB devices
+		- dmidecode
+
+bootloader
+	- grub2
+		- although there is a /boot/grub/grub.cfg file, you need to make changes in /etc/default/grub file; after making changes, execute "update-grub" command so that /boot/grub/grub.cfg file can be updated.
+		- NOTE: behind the scenes "update-grub" command will make use of the "grub-mkconfig" command
+		- NOTE: on redhat-based systems, 
+			- it is /boot/grub2/grub.cfg file (instead of /boot/grub/grub.cfg file)
+			- there is no "update-grub" command, so we will have to explicitly call the "grub2-mkconfig" command (not the "grub-mkconfig" command as there is no such command on redhat-based systems)
+
+understanding the boot process
+	1) BIOS (or in modern systems there is usally UEFI) is the firmware that will kickoff the boot process
+		- it invoke POST (power on self test), which is a bunch of tests that your hardware components run to make sure everything is okay with the hardware
+		- after POST is done, then the bootloader is loaded
+	2) the bootloader (in modern system this is usually "grub2")
+		- will load the "vmlinuz" file (located in the /boot directory)
+			- NOTE: the "z" at the end of "vmlinuz" tell you that this is a compressed file
+			- NOTE: "vmlinuz" is a compressed kernel image that is hardware agnostic and generic (by design)
+		- however, since there is a need to get the specifics that your device will need, the "/boot/initrd" (initial RAM disk) file is needed and is loaded into RAM
+			- initrd loads the necessary kernel modules to do things like identifying your hardware so that full kernel can be loaded
+			- once the necessary kernel modules are loaded, the full kernel is loaded so that things like the hard drive can be mounted and the other kernel modules will be loaded.
+	3) kernel
+		- once the other kernel modules are loaded and the kernel performs some tasks, the kernel will hand over control to the service handling system initialiation
+	4) service handling system initialization (in modern system this is usually "systemd")
+
+
+boot sources
+	- booting from different sources means booting from different media and is allowed by grub2
+	- PXE (preboot execution environment)
+		- is a network boot
+		- relies on 2 protocols
+			- DHCP
+				- dynamically assign ip addresses
+			- TFTP (trivial file transfer protocol)
+				- is about easily transfering particular files
+	- iso file
+	- cd
+	- dvd
+	- usb
+
+kernel panic
+	- is when the kernel stops running within memory and the system begins to crash
+	- could be caused by
+		- issue with driver
+		- issue with a component (like cpu or memory)
+		- software hack or malware
+		- when you update the kernel yourself
+	- modern systems will keep a backup copy of previous kernel when you are updating
+		- NOTE: if the system does not do the backup, then you should do it yourself
+		- NOTE: in ubuntu and redhat-based systems you can see the backups in the "/boot" directory
+	- to boot from the backup, you can hold down the "shift" key as the system is starting up
+	- you can diagnose the issue by looking at log files
+		- "/var/log/kern.log" file
+		- "/var/log/syslog" file
+		- "/var/log/dmesg" file
+
+
+compile from source code on ubuntu
+	1) sudo apt install build-essential
+		- gives access to the gcc compiler as well as other development tools and libraries
+	2) download the source, and if compress, we need to uncompress it; then change into the directory of the uncompressed source code downloaded 
+	3) may need to execute the "configure" file in the directory (if the "Makefile" file does not exist) in order to make sure the system has all the necessary dependencies and libraries for the program to run:  ./configure
+		- NOTE: using "./configure" is only needed when the system will need additional dependencies not necessarily available own the system
+		- NOTE: if the "Makefile" file does not exist and the "configure" file does exist, then "./configure" will create the "Makefile" file
+		- NOTE: if there are any errors, the there is a need install the necessary dependencies
+	4) create binary by executing the "make" command: make
+		- the "make" command will make use of the "Makefile" file in the directory in order to automate the compilation of the source code
+	5) if you want to execute the binary from any directory: sudo make install 
+
+
+compile from source code on redhat-based systems
+	1) sudo dnf group install "Development Tools" (or sudo dnf groupinstall "Development Tools")
+`	- steps 2 through 5 is the same as for compiling source code on ubuntu
+
+RAID (redundant array of independent disks)
+	- two types of RAID
+		- RAID performed in hardware
+			- implemented via a hardware controller
+			- has the better performance
+		- RAID implemented in software
+			- emulating the feature in software and is performed by the linux kernel
+	- RAID 0
+		- provides no fault tolerance; there is no redundancy
+			- makes zero copies
+		- known as striping
+		- benefits - performance by taking advantage of concurrency (by reading and writing to two disks at the same time)
+		- however is something happens to one disk, then the other becomes useless because we need both disks together as then we would have all the data; a disk only holds a partial of the total information by itself
+	- RAID 1
+		- provides fault tolerance
+			- makes 1 copy of the data
+		- known as mirroring
+		- gets a performance boost in reading data by reading from both disks at the same time
+		- not getting a performance boost in writing data because you will need to write the same piece of data to both disk
+		- downside: cutting in half the amount of data you can store (since you are storing the same data on both, you cannot use one for one set of data and the other for another set of data)
+	- RAID 5
+		- provides redundancy and performance
+		- need at least 3 disks
+		- uses parity bits in order to calculate missing data in the event a disk happens to be destroyed
+			- implication: if one disk is lost or destroyed, then the data on the disk can be recovered as long as all the other disks are good
+		- drawback: needs at least 3 disk, while RAID 0 and RAID 1 only needs 2 disks
+
+storage types
+	- file
+		- has hierarchical structure
+	- block
+		- chop data into blocks, with each block having a unique identifier; store the whole data
+	- object
+
+FUSE (filesystem in userspace)
+	- 
+
+file editing
+	- sed stream editor)
+		- examples
+			- sed "1p" file_a.txt
+				- prints the first line of file "file_a.txt" as well as all the other lines to stdout
+				- file "file_a.txt" is printed to stdout but the first line is printed twice
+				- the "1" stands for first line and the "p" stands for print 
+			- sed -n "1p" file_a.txt
+				- prints only the first line of file "file_a.txt"
+				- the "1" stands for first line, and the "p" stands for print
+				- the "-n" suppresses the output so that all the lines in file "file_a.txt" are not printed 
+			- sed "1d" file_a.txt
+				- prints all lines except the first line in file "file_a.txt"
+				- the "1" stands for first line and "d" stands for delete from stdout (or simply just don't show in stdout)
+				- NOTE: No deletion takes place in the original file
+			- sed -i "1d" file_a.txt
+				- the original first line is deleted from file "file_a.txt" because "1d" was used along with "-i"
+				- the "-i" means edit in-place (so the original file is modified)
+			- sed "s/hello/hi/" file_a.txt
+				- for each line in file "file_a.txt", replace the first occurrence of the word "hello" with the word "hi"
+				- NOTE: the original file is not modified
+			- sed "s/hello/hi/g" file_a.txt
+				- for each line in file "file_a.txt", replace the any occurrence of the word "hello" with the word "hi"
+				- the "g" after the forward slash means global, so the replacement happened all over 
+				- NOTE: the original file is not modified
+				
+	- awk
+		- examples
+			- awk '{print $2}' table.txt
+				- prints the second column (or field) of file "table.txt"
+				- the "$2" means the second column (or field)
+				- NOTE: by default awk deliminates columns (or fields) by whitespaces
+				- NOTE: the single quotation marks are important and should not be replaced with double quotation marks
+			- awk '{print $3 $1}'
+				- print the third column first and then the first column, but there is no separation (or space) between the third column and first column
+			- awk '{print $3 "-" $1}' table.txt
+				- prints the third column, then the hypen "-", and then the first column of file "table.txt"
+			- awk -F "," '{print $2}' table.csv
+				- prints the second column of the comma-separated-value file "table.csv"
+				- the "-F" allow us to change the field separator (or delimeter) from being whitespace (by default) to something else and in this case the field seperator is a comma 
+	- printf
+		- examples
+			- printf "Hello, %s. Nice to me you." "John Doe"
+				- the output is the following: Hello, John Doe. Nice to me you.
+				- the "%s" is for string
+			- printf "I am %d years old." 12
+				- the output is the following: I am 12 years old
+				- the "%d" is for an integer
+			- printf "The movie had an average rating of %.2f/5." 2.968
+				- the output is the following: The movie had an average rating of 2.97/5.
+				- the "%.2f" is for a floating point number and is rounded to two digits after the decimal point
+	- nano
+	- vim
+		- everything in vim is treated as an atomic transaction
+		- has different modes of operations
+			- command mode
+			- insert mode
+			- visual
+			- visual block
+		- switching between modes
+			- to go from insert mode to command mode, press the esc key
+			- to go from command mode to insert mode, type "i"
+			- to go from command mode to visual mode, type "v"
+		- operating in command mode
+			- type "gg" to go to start of the first line
+			- type "G" to go the last line
+			- type "h" to move the cursor left one character
+			- type "j" to move the cursor down one line
+			- type "k" to move the cursor up one line
+			- type "l" to move the cursor right one character
+			- type "dd" to delete (or cut) the line the cursor is on
+			- type "yy" to copy the line the cursor is on
+			- type "p" to paste  
+			- type "u" to undo the previous operation
+			- type "<left-ctrl>r" to redo the operation was just undone 
+			- type ":set number" to show line numbers in the editor
+			- type ":wq" to write (or save changes) and quit
+			- type ":q!" to quit without saving changes
+			- type ":q" to quit (assuming no changes were made)
+			- type ":%!<shell-commands>" to run shell commands and have the results be displayed in the file
+				- NOTE: beware the file will be overwritten each time you do this.
+			- type "/<search-term>" to search
+			- type ":%s/<text>/<replacement-text>/" to do a find and replace the first occurrence of <text> for each line
+			- type ":%s/<text>/<replacement-text>/g" to do a find and replace globally
+			- switching between different files when opening up multiple files using vim
+				- example: vim file1.txt file2.txt
+					- when looking at file1.txt, type ":next" to go to file2.txt
+					- when looking at file2.txt, type ":prev" to go to file1.txt 
+					- NOTE: quiting will close vim for both files
+			- navigating between tabs
+				- type "<left-ctrl>wj" to go to bottom tab
+				- type "<left-ctrl>wk" to go to top tab
+				- type "<left-ctrl>wl" to go to right tab
+				- type "<left-ctrl>wh" to go to left tab
+			- type ":help" (or ":h") to get help
+		- operating in visual mode
+			- type "y" (instead of "yy") to copy text
+
+- compression types
+	- gzip
+		- faster than bzip2 and uses less than cpu
+		- NOTE: not to be used to compress directories
+		- basic usages (for more info see the manpages)
+			- gzip <file>...
+				- to compress
+				- NOTE: by default, replaces the original files with the compressed files and the compressed file will end with the extension ".gz"
+			- gunzip <file>...
+				- to uncompress
+				- NOTE: by default, replaces the compressed files with the uncompressed files and removes the ".gz" extension from the file name
+			- gzcat <file>...
+				- temporarily uncompresses the files so that the files' contents can be sent to stdout
+				- NOTE: no new files nor changes occur
+	- bzip2
+		- has a better compression ratio (and thus tend to be smaller) than files compressed by gzip
+		- NOTE: not to be used to compress directories
+		- the basic usage of the commands is similar to gzip except, we use
+			- bzip2 (instead of gzip)
+			- bunzip2 (instead of gunzip)
+			- bzcat (instead of gzcat)
+			- NOTE: the file extension for bzip2 files is ".bz2" (instead of ".gz")
+	- xz
+		- has a better compression ratio the gzip and bzip2
+		- NOTE: not to be used to compress directories
+		- the basic usage of the commands is similar to gzip except, we use
+			- xz (instead of gzip)
+			- unxxz (instead of gunzip)
+			- xzcat (instead of gzcat)
+			- NOTE: the file extension for xz files is ".xz" (instead of ".gz")
+	- zip
+		- NOTE: gz, bzip2, and xz can only be used to compress individual files and not package them together
+		- can be used to package and compress (archive) files together
+		- NOTE: this is cross platform, working across *nix and windows
+		- basic command usage
+			- zip <new-archive-name> <file>...
+				- NOTE: a new file will be created <new-archive-name>.zip
+			- zip -r <new-archive-name> <file-or-directory>...
+				- NOTE: a new file will be created <new-archive-name>.zip
+				- NOTE: the "-r" is allows for recursively adding files from directories given as arguments to be archived; without "-r" what happens is that only the directories and not what is inside them are added to the archive, so you will then just have empty directories when unarchiving
+			- unzip <new-archive-name>.zip
+				- NOTE: for any original files present when executing this command, you will be given an option to replace or rename the files coming from the archive
+			- unzip -l <new-archive-name>.zip
+				- list the names of files/directories stored in the archive
+
+tar
+	- can be used to package files/directories together with or without compressing them
+	- by default, compression does not occur when packaging files/directories, but you have the option to add compression (such as gzip, xz, and bzip2)
+	- NOTE: since gzip, xz, and bzip2 can only be used on one file at a time, you can use tar to package the files/directories into a single file and then compress that single file with gzip, xz, or bzip2
+	- one primary use case: create backups of your data
+	- NOTE: tar supports recursive archiving by default contents in directories can be archived, but zip does not support recursive archiving by default and must "-r" with zip to get recursive archiving.
+	- examples
+		- tar -c -v -f tar_example_1.tar file1.txt file2.txt dir1
+			- "-c" is create archive
+			- "-v" is verbose
+			- "-f <archive_file_name>" the name of the archive to be created
+			- "file1.txt" and "file2.txt" are the files to be archived and "dir1" is the directory being archived along with all of its contents
+			- NOTE: no compression occurs, we are just packaging files together into a new created archive file
+		- tar -c -v -z -f tar_example_2.tar.gz file1.txt file2.txt
+			- "-z" is to use gzip compression;
+			- NOTE: you can use "--gzip" instead of "-z"
+			- NOTE: instead of using gzip compression, you can use "-J" (or "--xz") for xz compression or "-j" (or "--bzip2") for bzip2 compression
+		- tar -x -v -f tar_example_1.tar
+			- "-x" is to extract the files or directories from the file tar_example.tar
+		- tar -t -f tar_example_1.tar
+			- "-t" will list the files and directories include in the file tar_example.tar
+			- NOTE: you can use "--list" instead of "-t"
+
+cpio
+	- can be used to copy files to/from archives
+	- good for archiving the results of a search output
+	- NOTE: there is no compression occurring
+	- examples
+		- find -name "*.conf" | cpio -o -v > conf_output.cpio
+			- "-o" is output to archive
+			- "-v" is for verbose
+			- in this example, we are archiving all the files ending in ".conf" found by the "find" command and naming that archived file "conf_output.cpio"
+		- cpio -i -v < conf_output.cpio
+			- "-i" means to take input from an archive so the files will be copied from the archive
+			- "-v" is for verbose
+			- in this example, we retriving the files that are archived in the file "conf_output.cpio"
+
+dd (disk dump)
+	- examples
+		- dd if=file1.txt of=file1_copy.txt
+			- "if" is for input file
+			- "of" is for output file
+			- we are making a copy of file file1.txt and naming it file1_copy.txt
+		- dd if=/dev/sda1 of=sda1_backup bs=512 count=10
+			- "bs" is block size and tells up to what number of bytes to read/write at a given time
+			- "count" is saying that we will copy only a certain number of input blocks
+			- we are making a copy of /dev/sda1 by reading/writing at most 512 bytes at a given time (which is the default) and we will only copy 10 input blocks and store them in sda1_backup
+				- analogy: 
+					- it like we are dividing /dev/sda1 in memory into sizes of 512 bytes and then only taking 10 of those slices that we are using to make our copy of /dev/sda1
+			 
+
+- utility commands
+	- sort
+	- wc
+		- examples:
+			- wc -l some_file.txt
+				- outputs the number of new line characters in the file some_file.txt
+
+file and directory operations
+	- list directories/files
+		- ls
+			- examples
+				- ls -a dir1
+					- the "-a" means show all files/directories (including hidden ones that start with a dot)
+				- ls -i dir1
+					- the "-i" means disply the inode number
+		- tree
+	- mkdir
+		- examples
+			- mkdir new_dir1
+				- creates a new directory called "new_dir1"
+			- mkdir -p ~/dir_1/dir_1_a/dir_1_a_i
+				- create directory called "dir_1_a_i" and if directories "dir_1" and "dir_1_a" do not exists create them
+				- without the "-p", there would be an error creating "dir_1_a_i" if directories "dir_1" and "dir_1_a" did not already exists 
+	- touch
+		- the "touch" command can be used to create a file if it does not already exists, but it can also be used to change the time last accessed and/or the time last modified of a file or directory
+			
+	- copy files/directories
+		- cp
+			- examples
+				- cp file1.txt file1_copy.txt
+				- cp -p file1.txt file1_copy.txt
+					- "-p" means preserve ownership, mode (permissions), and timestamps
+					- NOTE: without the "-p", the timestamp is not preserved
+				- cp -n file1.txt file1_copy.txt
+					- "-n" means to not overwrite an existing file; basically, do nothing if file1_copy.txt already exists prior to executing the command
+				- cp -r dir1 dir1_copy
+					- "-r" means copy directories recursively; this allows for copy the files and subdirectories of directory dir1
+					- NOTE: without the "-r", you will not be able to copy the directory
+		- mv
+			- can move files and directories (with their subdirectories/files) by default without additional flags/options to be set (unlike the "cp" command)
+			- can rename files/directories
+			- preserves the original timestamp by default without additional flags/options to be set (unlike the "cp" command)
+			- there is a "-n" just like the "cp" command to help to avoid overwriting existing files
+
+
+manage files
+	- hardlinks and softlinks
+		- an inode
+			- pretty much contains all information about except its contents and the filename
+			- contains pointer information that allow us to determine where the data is located
+			- each inode a system will be unique
+		- a hard link is just another link that point to the exact same file referencing the exact same inode
+			- NOTE: you can see inode number using the "ls -i" command
+		- example of creating a hard link: ln -T file1.txt file1_link
+			- now a link "file1_link" exists and points to file "file1.txt"
+			- NOTE: if you do "ls -l -i file1.txt file1_link", you will see that the inode number is the same for "file1.txt" and "file1_link".
+			- NOTE: if you modify the contents of either file, then the other file's content will have that same modification
+			- NOTE: the link between the two files will exist even if you move each file to a different directory and/or change the name of each file
+		- a soft link (or symbolic link) is where a link point to a path that includes the name of the file instead of pointint to the inode
+		- example of creating a soft link: ln -s -T file1.txt file1_slink
+			- NOTE: the "-s" specifies that the link is a symbolic link that points to the path "file1.txt"
+				- NOTE we are using a relative path in this case, but we could also use an absolute path (so instead of "file1.txt" we could do "~/file1.txt") 
+			- now a soft link "file1_slink" exists and points to the file at the path "file1.txt"
+			- NOTE: if you do "ls -l -i file1.txt file1_slink", you will see that the inode number is different for "file1.txt" and "file1_slink".
+			- similarities with hard links
+				- if you modify the contents of either file, then the other file's content will have that same modification
+			- differences with hard links
+				- the link between the two files will be broken if you either change the name of ile "file1.txt" or if you move one of the files to a different directory
+					- NOTE: if you undo the change, things will work fine
+
+	- inode
+		- contains all the information about the file (except its filename/path and its contents) such as who the user owner is, the file size, the timestamps, etc.
+		- we are referencing metadata
+	- commands to view metadata
+		- stat
+		- file
+	
+transfer files across a network
+	- rsync (remote sync)
+		- is a remotely syncing up your files across different machines
+		- can sync files between local and remote machines and can sync files in local machine 
+		- is good for when you want to transfer files across different machines and you want to have synchronicity across both machines without having to send all the files again and again when you just want to send an update.
+		- NOTE: rsync must be installed on both machines (source and destination machines)
+		- some usages
+			- rsync -v -h <file-to-transfer>... <remote-username>@<remote-address>:<path-on-remote>
+				- NOTE: this is to transfer files to remote machine
+				- NOTE: if the timestamp for a file on the machines are different, rsync assumes they that the file one each machine is different and will transfer that file again even if no changes did not really occur to the file.
+				- NOTE: by default, rsync does not preserve timestamps.
+				
+			- rsync -v -h -r <file-or-directory-to-transfer>... <remote-username>@<remote-address>:<path-on-remote>
+				- NOTE: adding "-r" will ensure the copying recursively when you want to transfer a directory's content.
+				- NOTE: this is to transfer files/directories to remote machine
+			- rsync -v -h -r -a <file-or-directory-to-transfer>... <remote-username>@<remote-address>:<path-on-remote>
+				- NOTE: adding "-a" will ensure timestamps sync up so that the timestamps of the things transferred are the same. When adding "-a", only files with changes between the two machines will be transferred instead of all the files.
+				- NOTE: this is to transfer files/directories to remote machine
+			- rsync -v -h -r --ignore-existing <file-or-directory-to-transfer>... <remote-username>@<remote-address>:<path-on-remote>
+				- NOTE: adding "--ignore-existing" stops the transfer of updates to existing files to the machine the files are transferred to minimize unnecessary tranfers
+				- NOTE: this is to transfer files/directories to remote machine
+			- rsync -v -h -r -a <remote-username>@<remote-address>:<path-of-file-or-directory-on-remote> <path-on-destination-to-transfer-to>
+				- NOTE: this is to transfer files/directories from the remote machine
+	- scp (secure copy)
+		- leverages the ssh protocol 
+		- copy files to remote server
+		  scp <file>... <remote-username>@<remote-address>:<path-on-remote>
+		- copy files/directories recursively to remote server
+		  scp -r <dir-or-file>... <remote-username>@<remote-address>:<path-on-remote>
+		- copy files/directories recursively from remote server
+		  scp -r <remote-username>@<remote-address>:<path-of-directory-or-file-on-remote> <path-on-destination-to-transfer-to>
+
+	- sftp (secure file transfer protocol)
+		- example usage
+		  sftp <remote-username>@<remote-address>:<path-on-remote>
+			- NOTE: we will enter interactive mode where we can interactively transfer files as well as do other things (such as, traversing local and remote file system, creating and deleting files/directories and list directory contents). Type "help" to view commands.
+	- nc (or netcat)
+		- can also be used for port scanning
+		- check for open ports for the given port range at the given remote address: 
+			- nc -z -v <remote-address> <port-range>
+				- example of <port-range>: 10-50
+				- "-z" is for open ports
+				- "-v" is for verbose
+		- listen for any incomming connections on a given port
+			- nc -l -v -p <port-num>
+				- "-l" is for listening
+				- "-p" is for port number
+		- transfer a file
+			- on the receiver (the machine data is transferred to), we are going to listen for incomming connections on a given port and send what ever gets sent to a file
+				- nc -l -v -p <port-num> > <file-name>
+			- on the sender (the machine tranferring the data), we are going to send the data to the receiver's address and specified port number
+				- nc <receiver-address> <port-num-receiver-listening-on> < <file-to-transmit>
+		- chat between two machines
+			- on machine-1:
+			  nc -l -v -p <port-num>
+			- on machine-2
+			  nc <machine-1-address> <port-num-machine-1-listening-on>
+			- NOTE: whatever data one sends, the other will now be able to see it
+
+partitions
+	- why create partitions?
+		- organize and segment your data
+	- BIOS and UEFI
+		- with BIOS there are different approaches
+			- we can have a maximum of 4 primary partitions
+			- we can have 3 primary partitions and 1 extended partition
+			- NOTE: a primary partition is capable of booting an operating systems (and is also capable of storing data)
+			- NOTE: the extended partition is not going to be used for booting up an operating system, but instead will just be used as an logical container that can be further subdivided.
+		- with UEFI we can have up to 128 partitions
+	- fdisk
+		- "fdisk" command can be used to manipuate disk partitions
+		- list the partition tables for the specified devices
+			- example: sudo fdisk -l "sda"
+				- this is for device "sda"; "sd" is for hard drive and "a" is for first; so "sda" is first hard drive
+			- example: sudo fdisk -l "sdb"
+				- this is for device "sdb"; "sd" is for hard drive and "b" is for second; so "sdb" is for second hard drive
+		- creating/deleting partitions with fdisk
+			- example: sudo fdisk /dev/sdb
+			- NOTE: you can use "/dev/sdb" or just "sdb"
+			- NOTE: an interactive prompt begins in order to create/delete the partition on the "sdb" hard disk
+		- NOTE: fdisk is used only to create MBR partition tables; fdisk was not designed or meant to be used for GPT
+	- parted
+		- the "parted" command be used to manipulate disk partitions
+		- can be used to create GPT partition tables (unlike fdisk)
+		- list partitions
+			- sudo parted -l
+		- create partitions
+			- example: sudo parted /dev/sdb
+				- NOTE: this will create an interactive prompt where you can select what you want
+				- NOTE: you can also use the interactive prompt to remove a partition
+			- example: sudo parted /dev/sdb mkpart primary ntfs 0% 50%
+				- "/dev/sdb" is the hard disk being used that for creating a partition
+				- "mkpart" is the sub command used to create partitions by parted 
+				- "primary" is the partition type
+				- "ntfs" is the file-system type
+				- "0%" is the start of the partition
+				- "50%" is the end of the partition
+				- NOTE: this created partition will take up about 50% of the space on disk /dev/sdb
+				- NOTE: this will not be an interactive command
+			- example: sudo parted /dev/sdb rm 1
+				- "/dev/sdb" is the hard disk being used to delete a partition
+				- "rm" is the sub command used to delete partitions by parted
+				- "1" is the partition number to delete
+				- NOTE: we are deleting partition #1 from /dev/sbd
+				- NOTE: this will not be an interactive command
+	- gdisk
+		- is like fdisk, but for using GPT (instead of MBR); however, it can still be used or MBR, too
+		- create/delete partitions
+			- example: sudo gdisk /dev/sdb
+				- NOTE: this will create an interactive prompt where you can select what you want
+	- gparted
+		- allows for working with the "parted" command in graphical user interface
+	- partprobe
+		- helps if we run any errors with the creation of partitions
+		- inform the operating systems of partition changes
+			- example: sudo partprobe /dev/sdb
+		- show a summary of the partitions
+			- expample: sudo partprobe -s /dev/sdb
+
+monitoring storage space and disk usage
+	- df
+		- shows storage usage related to particular partitions and logical devices
+		- df
+			- shows storage usage on all currently mounted file systems and where the storage is mounted at
+		- df -h
+			- will print sizes in more human-readable format
+	- du
+		- just executing "du" will show a summary the disk usage of each directory (and recursively goes into the directory) and files in the current directory this command is executed in; all the disk usage of these files and subdirectories are displayed separatedly
+		- du <file-or-directory>
+		- du -h -s [<file-or-directory>...]
+			- shows a summary of the disk usage of any files or directories provided as arguments; otherwise, it just shows a summary of the disk usage of the current directory
+				- NOTE: this command will not recursively display information about each subdirectories of the directory arguments given; instead only a total disk usage is given for each argument
+			- "-s" means only display the total instead of going into the directories and displaying info about the subdirectories and its files
+			- "-h" means display sizes in a more human-readable format
+
+commands useful for getting storage hardware statistics
+	- lsscsi
+		- list SCSI devices (or hosts) and NVMe devices
+	- lsblk
+		- list block devices
+		- we will see things related to disks, partitions, and where the partitions are mounted
+		- lsblk -f
+	- blkid
+		- locate/print block device attributes
+		- we will see thing like block size, file system type, partition label, as well as uuid for the block devices
+	- fcstat (fiber channel statistics)
+		- provides info like length statistics (can show things like connection errors) and other things
+
+
+filesystems
+	- what is a filesystem
+		- to manage and organize all of your data stored on physical disk
+	- we first partition a disk, then we will format the partition with a particular filesystem, and then we can mount the partition so that we will be able to have access all the data there
+	- basic filesystems in linux
+		- ext4 (extended filesystem version 4)
+			- has journaling
+	- mkfs (make filesystem)
+		- is a command used to build a linux filesystem
+		- this mkfs frontend is DEPRECATED; we should USE THE FILESYSTEM SPECIFIC mkfs.<type> utils
+	- mkfs.ext4
+		- example: sudo mkfs.ext4 /dev/sdb1
+			- creates a ext4 filesystem on partition 1 of hard disk "sdb"
+	- ext tools
+		- fsck (filesystem check)
+			- allows us to inspect the filesystem when it is in the unmounted state
+			- can automatically detect and correct a bunch of errors that may be encountered
+			- is more like a frontend that uses other commands (such as e2fsck, which would be used under the hood for checking ext2/ext3/ext4 filesystems)
+			- example: sudo fsck /dev/sdb1
+		- tune2fs
+			- adjusts tunable filesystem parameters on ext2/ext3/ext4 filesystems
+			- example: sudo tune2fs -l /dev/sdb1
+				- the "-l" means list, it will list the curent values of the parameters that can be set by tune2fs
+				- two of the pieces of output from this command is "mount count" and "maximum mount count"
+					- mount count
+						- each time you reboot your system and the filesystem is mounted, then the mount count will increase by 1
+					- maximum mount count
+						- is the amount of times that a filesystem can be mounted before fsck will automatically check the filesystem 
+						- NOTE: the maximum mount count can be changed
+							- example: sudo -c 5 tune2fs /dev/sdb1
+								- changed the maximum mount count to 5 for partition /dev/sdb1
+						- NOTE: if the maximum mount count is set to -1, then fsck will not be automatically invoked
+						- NOTE: the behavior of fsck being automatically invoked to check the filesystem can be overwritten in configuration file at /etc/fstab 
+				- 
+		- resize2fs
+			- ext2/ext3/ext4 filesystem resizer
+			- example: sudo resize2fs /dev/sdb1 2G
+				- resizing the filesystem on partition 1 on disk /dev/sdb to 2GB
+	- btrfs (butter fs)
+		- is an alternative to ext filesystems
+		- has support for LVM (linux volumne manager)
+		- provides the ability to have snapshots
+		- we can create a btrfs filesystem using "mkfs.btrfs" command
+	- xfs   
+		- is an alternative to ext filesystems
+		- commonly used in redhat
+		- we can create a xfs filesystem using "mkfs.xfs" command
+	- swapping
+		- when we do not have enough RAM, we can make use of our hard disk
+		- virtual memory
+			- when our computer runs out of RAM, our computer is going to take some of the data that it has stored in RAM and just dump it on to the hard drive in to this virtual memory
+			- virtual memory is in a place in the hard drive known as the "swap space"
+			- the process of moving the data from the RAM into the swap space of the physical hard drive is done in chunks known as "pages"
+			- when needed, what is in the swap space is moved back into RAM
+	- mounting
+		- the "mount" command is used to mount a filesystem
+		- example: sudo mount -t ext4 /dev/sdb1 ~/my_dir_for_mounting_sdb1
+			- we will be attaching the filesystem "ext4" on device "/dev/sdb1" at the directory "~/my_dir_for_mounting_sdb1"
+			- NOTE: any content available at "~/my_dir_for_mounting_sdb1" prior to mounting is not visible after the mount but will become visible again unmounting
+			- NOTE: this is not a permanent attaachment; when you reboot your system, the attachement is no longer
+				- when the system boots, the root filesystem will be mounted with the option "-a" (so we would have "mount -a") and this will automatically mount a set of filesystems; the filesystems that are automatically mounted when "mount -a" command is executed are defined in the "/etc/fstab" file
+				- a line in the "/etc/fstab" file follows a specific format and it uses tab-separated columns
+					- column 1: <file system>
+						- example value: /dev/sdb1
+					- column 2: <mount point>
+						- example value: /home/iwterry/my_dir_for_mounting_sdb1
+					- column 3: <type>
+						- example value: ext4
+					- column 4: <option>
+						- example value: defaults
+					- column 5: <dump>
+						- example value: 0
+					- column 6: <pass>
+						- example value: 0
+						- it is like a priority number that relates to the fsck commmand for automatically checking of a filesystem
+						- the ones with the value 1 has the highest priority, meaning that these filesystems will be the first thing checked
+						- the next highest priority is the ones with value 2, then the ones with value 3 and so on and so forth
+						- the ones with value 0 mean that there will be no automatic checks by fsck; note that this will override the "max mount count" value that was seen/set when using the "tune2fs" command
+		- the "umount" command is used to unmount a filesystem
+		- example: sudo umount ~/my_dir_for_mounting_sdb1
+			- NOTE: a filesystem cannot be unmounted when it is busy
+		- systemctl can be used
+			- to mount a previously unmounted (but was mounted before)
+				- example: sudo systemctl start ~/my_dir_for_mounting_sdb1
+			- to unmount
+				- example: sudo systemctl stop ~/my_dir_for_mounting_sdb1
+			- to check the status of a mount
+				- example: sudo systemctl status ~/my_dir_for_mounting_sdb1  
+
+LVM (logical volume management)
+	- PV (physical volumne)
+		- represents the actual physical disks that are being used for the storage
+		- each disks is given a special LVM header
+	- VG (volume group)
+		- is the combined result of all the physical disks that have been grouped together
+	- LV (logical volume)
+		- is how we sub divide the volume group to meet whatever needs we have; we basically slicing the volume group up into different pieces to meet our needs
+		- NOTE: logical volumes can be snapshot
+	- NOTE: we may need to install "lvm2": sudo apt install lvm2
+	- when creating partitions with fdisk, we will change partition type to be "Linux LVM"
+	- to list the physical volumes and their info:
+		- sudo pvdisplay
+		- sudo pvs
+	- create a physical volume using the "pvcreate" command
+		- this will initialize physical volume for use by LVM
+		- example: sudo pvcreate /dev/sdc1 /dev/sdd1 /dev/sde1
+	- to display volume groups and their info:
+		- sudo vgdisplay
+		- sudo vgs
+	- create a volume group using the "vgcreate" command
+		- example: sudo vgcreate my_volume_group_1 /dev/sdc1 /dev/sdd1 /dev/sde1
+			- NOTE: "my_volume_group_1" is the name of the new volume group created
+			- NOTE: it is not needed to use "pvcreate" command to initialize physical volumes because the "vgcreate" command will initialize them; so "sudo pvcreate /dev/sdc1 /dev/sdd1 /dev/sde1" command was not really needed
+	- display logical volumes and their info
+		- sudo lvdisplay
+		- sudo lvs
+	- create a logical volume using the "lvcreate" command:
+		- examples:
+			- sudo lvcreate -n my_logical_volume_1 -L 2G my_volume_group_1
+				- "my_logical_volume_1" is the name of the logical volume created
+				- the "2G" is the size of the logical volume
+			- sudo lvcreate -n my_logical_volume_2 -l 50%FREE my_volume_group_1
+				- the "50%FREE" is the size of the logical volume; it means the size will be 50% of the remaining free space in the volume group "my_volume_group_1"
+	- one you have your logical volume, you can format the logical volume with a particular filesystem and mount it so that it is accessible
+		- example
+			sudo mkfs.ext4 /dev/my_volume_group_1/my_logical_volume_1
+			sudo mount -t ext4 /dev/my_volume_group_1/my_logical_volume_1 my_mount_dir_2
+	- NOTE: using "sudo lvm" will open interactive prompt where you can view all commands by typing "help"
+
+encryption
+	- full disk encryption
+		- all data written on disk is fully encrypted at rest when the computer is powered off
+	- encryption on linux
+		- LUKS (linux unified key setup)
+			- NOTE: LUKS does not itself perform any encryption; LUKS is just a standard about how encryption should be done on linux systems 
+		-cryptsetup
+			- is a tool that performs encryption on linux systems
+			- demo of using cryptsetup
+				1) sudo apt install cryptsetup
+				2) sudo cryptsetup luksFormat /dev/my_volume_group_1/my_logical_volume_2
+					- NOTE: we will be prompted to set a passphrase
+					- NOTE: this will initialize a LUKS partition
+				3) sudo cryptsetup open /dev/my_volume_group_1/my_logical_volume_2 my_unencrypted_volume_1
+					- NOTE: /dev/my_volume_group_1/my_logical_volume_2 cannot be mounted
+					- NOTE: "my_unencrypted_volume_1" is the name that will be used
+					- NOTE: we will be prompted to enter the passphrase we set earlier
+				4) sudo mkfs.ext4 /dev/mapper/my_unencrypted_volume_1
+				5) sudo mount -t ext4 /dev/mapper/my_unencrypted_volume_1 ~/my_mount_dir_3
+				6) now we can use make use of ~/my_mount_dir_3 by creating directories and files
+				7) when finished working with ~/my_mount_dir_3, use "sudo umount ~/my_mount_dir_3"
+				8) sudo cryptsetup close /dev/mapper/my_unencrypted_volume_1
+					- NOTE: the files/directories are now encrypted
+				NOTE: use steps 3 through 7 (but skip 4) when repeating and just want to use the LUKS partition created in step 2 (in order to access or create additional files/directories)
+
+
+network system and shares
+	- NFS (network file system)
+		- using this protocol we are able to share a file system over a network
+		- when we are accessing the file system over the network, we are not logging in (like <user>@<location>) to the file system; instead we log into a machine and if the machine has access to the filesystem, then we as logged in users of the machine can get access to the shared file system
+		- we are sharing a file system with another machine
+		- terminology
+			- the computer doing the sharing (and this would be the computer where the file system is stored on) is called the NFS server
+			- the computer accessing/using the file system is called the NFS client
+		- when we utilize remote procedure calls using NFS, the NFS server can have control how the file system is being shared
+			- the NFS server can specify what it is that it wants to share (which directories it wants to share) and who it will share the file system with (which machines)
+			- the remote procedure call is how the machine is able to access a remote file system to make it appear as if the file system is local (on the machine) even though in reality we are accessing the file system over a network
+		- NFS server
+			- inside the file /etc/exports is where we specify what we want to share and who to share it with; it also where we specify what the level of access that share should be (basically, read and/or write ability)
+			- there are two groups of permissions
+				- async and sync options
+					- "sync" option
+						- if the NFS client makes a change to a file on its system for the file system being shared, then that change will be immediately written to disk on the NFS server
+						- benefit: decreased possibilty of data loss because changes are stored on NFS server disk
+						- drawback: decreased performance because of needing to write the changes to NFS server disk
+					- "async" option
+						- if the NFS client makes a change to a file on its system for the file system being shared, then that change will not be immediately written to disk on the NFS server  (instead the changes are written into RAM until they are ready to be committed to disk)
+						- benefit: increased performance because less writes to NFS server disk
+						- drawback: increased possibility of data loss because changes are not stored on NFS server disk
+				- root_squash and no_root_squash options
+					- "root_squash" option
+						- the root user on the NFS client will not have the same access as the root user on the NFS server
+					- "no_root_squash"
+						- the root user on the NFS client will have the same access as the root user on the NFS server
+			- there are different days to specify who gets access
+				- specify a hostname (and we can use DNS to resolve the hostname to an ip address) of the one who get access
+				- specify an ip address of the one who gets access
+				- specify a network range (which is a range of ip address) that are allowed to connect to the NFS server
+				- specify a domain that will be allowed access
+			- setup a NFS server (using ubuntu)
+				1) sudo apt install nfs-kernel-server
+				2) have a directory you want to share or create a new one to share
+				3) add an appropriate entry to file /etc/exports so that that directory is shared with the who you want to share it with along with what permissions the clients will have
+					- example of an entry: <path-of-shared-dir>	<host-name-or-ip-address-or-network-range>(<comma-separated-list-of-permissions>)
+						- example:
+						  /my_nfs_share_dir	10.10.10.1/24(rw,root_squash) 
+						  # what is shared? the directory /my_nfs_share_dir
+						  # who is allowed this directory able to shared with? anyone within ip address range 10.10.10.1/24 (this is CIDR notation)
+						  # what permissions are set? "rw" is for read/write ("ro" is for read only) and we have "root_squash" (so that the root user of NFS client does not have root access on NFS server)
+				4) you can either use "sudo exportfs -r" or "sudo systemctl restart nfs-kernel-server" so that changes made to the /etc/exports file can take place
+					- make sure the service "nfs-kernel-server" is active; you can use "sudo systemctl status nfs-kernel-server"
+				5) sudo exportfs
+					- NOTE:you should be able to see the directory you want to share as well with whom in the output of this command
+				
+		- NFS client 
+			- setup an NFS client (using redhat)
+				1) sudo dnf install nfs-utils
+				2) have a directory you want the sharing directory to be mounted to
+				3) sudo mount <nfs-server-ip-address>:<path-of-shared-dir-on-nfs-server> <path-to-dir-on-nfs-client-you-want-to-be-mounted-on>
+					- example:
+					  sudo mount -t nfs 10.10.1.1:/my_nfs_shar_dir /mnt/my_nfs_client_dir
+					  # NOTE: the -t is not needed
+					- NOTE: if the system is restarted, the nfs share will not be mounted to the nfs client; so to have the mount automatically happen when restarting the system, add an entry to the file /etc/fstab and then you can either restart your machine or use the command "sudo mount -a" to have what you have in /etc/fstab take place
+				
+
+	- SMB
+		- developed by microsoft but is open sourced and can work wih other operating systems
+		- on linux, there is a package known as "samba" that is a linux implementation of SMB
+		- terminology
+			- workgroup
+				- a group of computers that want to share a particular resource (it could be a file system, printer, etc)
+				- by default on windows systems, everyone is in a workgroup called "WORKGROUP"
+		- SMB server
+			- setup a SMB server (using ubuntu)
+				1) sudo apt install samba
+				2) have a directory you want to share or create a new one to share
+				3) add an appropriate entry to file /etc/samba/smb.conf so that that directory is shared with the who you want to share it with along with what permissions the clients will have
+
+					- example configuration without authentication
+					  [mysmbshare]
+					    comment = My SMB Share without Authentication
+					    guest ok = Yes # allows for unauthenticated users
+					    path = /my_smb_share_dir
+					    read only = No  # can read/write
+					- example configuration with only authentication
+					  [mysmbshare]
+					    comment = My SMB Share with only Authentication
+					    path = /my_smb_share_auth_dir
+					    read only = No 
+					    valid users = smbtestuser # here we are assuming that there is a user called "smbtestuser" on the machine for the SMB server
+					    # only the user "smbtestuser" is allowed and not other users or a guest
+				4) testparm
+					- this command is done to make sure you do not have any syntactical errors in the file
+
+		 		5) sudo systemctl restart smbd nmbd
+			- for setting up authentication
+				1) create or have a user <username> on the smb server
+				2) sudo smbpasswd -a <username>
+					- this will create an smb password for the user <username>
+					- NOTE: this password for user <username> is different from the one set using the "passwd" command (which would be needed if the user <username> is authenticating on the machine locally)
+		- SMB client
+			- setup a SMB client (using redhat)
+				1) sudo dnf install samba-client cifs-utils
+				2) have a directory you want the sharing directory to be mounted to
+				3) sudo mount -t cifs //<ip-address><smb-share-name-given-in-config-file> <path-to-dir-on-nfs-client-you-want-to-be-mounted-on> -o guest
+					- example
+					  sudo mount -t cifs //10.10.10.10/my_smb_share /mnt/my_smb_client_dir -o guest
+					- NOTE: "guest" is being used here with the assumption that authenticating is not required
+					- instead of using "guest", there is alternative if you are authenticating as a particular user:
+						- username=<username>
+							- then you will be prompted to enter the smb password for this particular user
+
+managing services
+	- systemctl
+		- before systemd, there were sysvinit and upstart
+		- start a service manually
+			- sudo systemctl start <service-name>
+		- stop a service manually
+			- sudo systemctl stop <service-name>
+		- restart a service
+			- sudo systemctl restart <service-name>
+		- view status and logs of a service
+			- sudo systemctl status <service-name>
+		- have a service automatically start after boot
+			- sudo systemctl enable <service-name>
+		- stop a service from automatically starting after boot (but can be still started manually)
+			- sudo systemctl disable <service-name>
+		- prevent a service from being able to be started if it is already stopped or after the machine has been rebooted
+			- sudo systemctl mask <service-name>
+			- NOTE: you will not be able to start the service again after it has been stopped until you perform unmasking
+			- NOTE: this will not stop an already running service
+		- perform unmasking to allow a service to be able to be started again
+			- sudo systemctl unmask <service-name>
+
+scheduling
+	- cron
+		- /etc/crontab
+			- contains a list of schedules for your cronjobs
+			- this is a system-wide file (and thus is independent of a specific user)
+			- format of an entry (or row/line)
+				- <minute> <hour> <day-of-month> <month> <day-of-week> <user-name> <command-to-be-executed>
+				- NOTE: <minute> can be 0, 1, ..., or 59
+				- NOTE: <hour> can be 0, 1, 2, ...,  or 23
+				- NOTE: <day-of-month> can be 1, 2, ..., or 31
+				- NOTE: <month> can be jan (or 1), feb (or 2), ..., or dec (or 12)
+				- NOTE: <day-of-week> can be sun (or 0 or 7), mon (or 1), ..., or sat (or 6)
+				- NOTE: when the value asterick (*) is given for minute, hour, day of the week, day of the month, or month, this means "at any" (e.g., at any minute, at any hour, etc.); this is basically saying that we don't really care about when
+				- examples:
+					- we can do something like execute every 15 minutes (i.e., /15 * * * *) with the help of a forward slash (/) 
+					- we can do something like execute every minute from 1:15 am to 1:20 a.m. every day (15-20 1 * * *) with the help of a hyphen (-)
+				- see https://crontab.guru/ to better understand the timing format 
+				- NOTE: <user-name> is the user the command will be executed as
+			- NOTE: not a good idea to edit this file; instead this file is going to be used to run the files in the following directories:
+				- /etc/cron.hourly
+					- files in here are ran houly
+				- /etc/cron.daily
+					- files in here are ran daily
+				- /etc/cron.weekly
+					- files in here are ran weekly
+				- /etc/cron.monthly
+					- files in here are ran monthly
+				- NOTE: the files in these directories are for automating system-wide configurations
+		- we can also have user-defined cron jobs (or cron jobs for individual users)
+			- crontab
+				- format of an entry (or row/line)
+					- <minute> <hour> <day-of-month> <month> <day-of-week> <command-to-be-executed>
+					- NOTE: this fields have the same meaning as those in /etc/crontab file
+				- crontab -e
+					- is used to edit your own crontab
+					- NOTE: on first execution, you will be used to choose an editor in order to edit the crontab
+				- crontab -l
+					- view your own crontab
+				- crontab -r
+					- remove your current crontab
+				- crontab -u <user-name> -l
+					- view the user's crontab
+				- crontab -u <user-name> -r
+					- remove the user's current crontab
+			- cron.deny and cron.allow files choose who is allowed or denied the ability to used the "crontab" command
+				- if the cron.allow file exists, the your username must be in the file to execute the "crontab" command
+				- if the cron.deny file exists and your username is in the file, then you will not be allowed to execute the "crontab" command (unless your username is in the cron.allow file)
+	- at
+		- is good for one-time jobs and do not want to be recur
+		- NOTE: this command may not installed by default
+			- sudo apt install at
+		- to control access to this command, there is /etc/at.allow and /etc/at.deny files, and these work similar to /etc/cron.deny and /etc/cron.allow files
+		- use "man at" to learn more
+		
+
+processes
+	- are running programs on a computer
+	- states of processes
+		- running
+			- processes currently using cpu
+		- sleeping
+			- processes currently sleeping; they are waiting for some type of event to occur before it can continue its execution again
+			- different types of sleep states 
+				- uninterruptable sleep state
+					- not really seen that much on modern systems
+					- indicates that some type of error in the system
+					- processes in this state cannot be killed; the only way to deal with it is to reboot the system
+				- interruptable sleep state
+					- a process is waiting for some operation (such as an i/o operation)
+		- stopped
+			- processes currently not executing
+		- zombie
+			- processes that have been stopped but still remain in memory
+			- occurs when a child process has stopped but the parent process is unaware
+			- this can be fixed by killing the parent process of the zombie
+			
+	- utilities to show a static listing of processes
+		- ps
+			- provides a snapshot of the current processes
+			- usage examples
+				- ps
+				- ps -A (or ps -e)
+					- NOTE: both the "-e" and "-A" options do the same thing
+				- ps -e -f
+				- ps -o <comma-seperated-list-of-column-names> -p <process-id>
+					- shows process information (identified by the given column names) for the given process (identified by the process id) 
+		- pstree
+			- displays a tree of processes
+			- usage examples
+				- pstree
+	- utiltities to show a dynamic listing of processes as well as other information (like cpu and memory percentages and states of processes)
+		- top
+			- usage examples
+				- top
+				- top -d <seconds>
+					- allows us to control how often the screen updates with new information
+				- top -p <process-id>
+			- NOTE: press the "h" key for help and the "q" key to exit
+		- htop
+			- usage examples
+				- htop
+				- htop -d <seconds>
+				- htop --tree
+					- shows the "command" column in a tree-like structure (making it easier to understand parent/child processes)
+			- NOTE: this may need to be installed
+	- utilities to list open files
+		- lsof
+			- lists open files along with the processes that are using them
+			- NOTE: from the manpages, an open file may be a regular file, a directory, a block special file, a character special file, an executing text reference, a library, a stream, or a network file (internet socket, NFS file or unix domain socket)
+			- usage examples
+				- lsof
+				- lsof - p <process-id>
+					- shows the listing of open files used by the particular process id
+				- lsof -u <user-name>
+					- shows the listing of open files used by the particular user
+				- sudo lsof -i
+					- shows the listing of any network connection information (and the processes using the network)
+						- network information such as the transport-layer protocols (tcp/udp), application-layer protocol name (such as http), and ip addresses are shown
+				- sudo lsof -i -P
+					- like "sudo lsof -i" but displays the port number (instead of the application-layer protocol name)
+						- for example, instead of showing the protocol name "http", we would see the port number "80" 
+	- the "kill" utility
+		- sends a signal to a process
+		- names along with their numbers of some important signals
+			- sigterm or term (15)
+				- used when you would like a process to stop;
+				- allows a process to perform some actions before shutting down
+				- a process can choose to ignore this signal
+			- sigkill or kill (9)
+				- used to stop a process; this will kill a process and a process cannot ignore this signal
+			- sighup or hup (1)
+				- if a parent process stops, this signal is sent to all the child processes so that they can be stopped
+			- sigint or int (2)
+				- this interrupts a process
+				- NOTE: this signal can be emitted by pressing <ctrl>+c on the keyboard in the terminal
+			- sigtstp or tstp (20)
+				- this is a terminal stop
+				- NOTE: this signal can be emitted by pressing <ctrl>+z on the keyboard in the terminal
+		- usage examples
+			- kill -l
+				- lists names of available signals along with their numbers
+			- sudo kill -s <signal-name-or-number> <process-id>
+	- utilities to search for processes by their names
+		- pidof
+			- list the process id's of a running program
+			- usage examples
+				- pidof <name-of-program>
+					- NOTE: the argument must be an exact match for a process's name in order for that process's id's to be listed
+		- pgrep
+			- lists the id's of processes
+			- usage examples
+				- pgrep <process-name-regex>
+	- jobs
+		- means that we are referencing a process that is started in your terminal
+		- can be ran in the background or in the foreground
+			- in the background, we can use the terminal again after we start the process
+			- in the foreground, the process is going to be using the terminal until the processes finishes and thus not allowing us to use the terminal
+		- to start a job in the background, place an ampersand (&) after the command 
+			- example
+			  sleep 3 &
+		- the "jobs" utility
+			- usage example: jobs
+				- lists active jobs (along with their job id's and statuses)
+		- the "fg" utility
+			- usage example: fg <job-id>
+				- a background job becomes a foreground job
+		- the "bg" utility:
+			- usage example: bg <job-id>
+				- a foreground job becomes a background job
+	- managing priorities
+		- the NICE value
+			- value range: -20 to +19
+			- will affect the priority of a process
+			- the lower the NICE number is, the greater priority a process gets
+		- regular users cannot give a process negative NICE numbers, but when using sudo, users can
+		- the default priority is 20; the default NICE value is 0
+		- when a process's NICE value is changed, the priority of that process is 20 + <new-nice-value>
+		- utilities for managing process priorities
+			- nice
+				- runs a program with a particular NICE value
+				- examples
+					- nice -n 5 sleep 300 &
+						- executing the command "sleep 300" as a background process (because o the &) and giving the process a NICE value of 5 (and thus a priority of 25)
+					- sudo nice -n -5 sleep 300 &
+						- giving a nice value of -5 (and thus a priority of 15)
+				- NOTE: "sudo" is needed when giving a process a negative NICE value
+					
+			- renice	
+				- alters the NICE value of an already running process
+				- examples
+					- sudo renice -n 2 19892
+						- where 19892 is the process id of the process whose NICE value will be changed
+						- this will give the process a NICE value of 2 (and thus a priority of 22)
+				- NOTE: "sudo" is needed when providing a process a lower NICE value (and thus a higher priority) than it currently has
+
+
+managing network interfaces
+	- naming convention for ethernet network interfaces (that use systemd)
+		- example: enp0s1
+			- "en" stands for ethernet
+			- "p0" stands for bus 0
+			- "s1" stands for slot 1
+
+	- loopback network interface
+		- is just an interface in software
+		- has the name "lo" for the name of the network interface
+		- is not a physical address
+		- should always remain up (unless you explicitly shut it down)
+		- can be useful when troubleshooting networks
+		- ipv4 address is 127.0.0.1 and ipv6 address is ::1
+		
+	- the "ifconfig" utility
+		- NOTE: this is a legacy command
+		- NOTE: if not installed already, can be installed using "sudo apt install net-tools"
+		- is used to configure network interfaces
+		- example usages:
+			- ifconfig
+				- shows information on all currently active (or up) interfaces
+				- naming convention
+				- some information given as output for each network interface:
+					- name of the network interface
+					- ipv4 and ipv6 addresses
+					- network mask
+						- specifies which subnet the network interface is on
+						- used to separate the ip address into two types: network address and host address
+					- mac address
+						- NOTE: loopback network interface does not have a mac address
+					- amount of received and transmitted packets
+					- amount of received and transmitted errors and dropped packets
+			- sudo ifconfig <network-interface-name> down
+				- shutdown the network interface identified by  <network-interface-name>
+			- ifconfig -a
+				- shows information on all available interface (regardless of whether they are up or down)
+	- the "hostname" utility
+		- the hostname is the identifiable name of your machine
+		- example usages:
+			- hostname
+				- gives the hostname of the machine
+			- sudo hostname <new-hostname>
+				- sets the hostname to <new-hostname>
+				- NOTE: this change does not persist; the /etc/hostname is not updated to the new hostname
+					- use hostnamectl utility if you want persistence
+			- hostname -I
+				- display all ip addresses associated with the hostname
+			- hostname -f
+				- display fully qualified domain name
+ 	- the "hostnamectl" utiltity
+		- example usages
+			- sudo hostnamectl hostname <new-hostname>
+				- sets the hostname to <new-hostname> and the change persists (you will see this after opening a new terminal or rebooting)
+				- the /etc/hostname file is updated to the new hostname
+	- ARP (address resolution protocol)
+		- allows for associating ip address with mac address
+	- the "arp" utility
+		- allow for manipulating the system ARP cache
+		- example usages:
+			- arp
+				- shows ARP cache in tabular format
+			- arp -a
+ 				- shows ARP cache in different format
+			- sudo arp -d <ip-address>
+				- delete the given ip address from ARP cache
+			- sudo arp -s <ip-address> <mac-address>
+				- manually (or statically) add an entry to the ARP cache that associates the given ip address with the given mac address
+	- the "route" utility
+		- NOTE: this is a legacy command
+		- is for showing/manipulating kernel's ip routing tables
+		- example usages:
+			- route
+				- show current content of kernel's ip routing tables
+			- route -n
+				- instead of using symbolic hostnames (like "route" by itself with no options), use ip addresses
+				- NOTE: this seems to give a cleaner look to see what is going on compared to not using the "-n" option
+			- route add -net <network-address> netmask <network-mask-val> gw <ip-address-gw-val>
+				- add a route
+				- "gw" is for gateway (and <ip-address-gw-val> is the address for the gateway)
+				- example:
+					- route add -net 192.168.117.0 netmask 255.255.255.0 gw 192.168.115.1
+			- route del -net <network-address> netmask <network-mask-val> gw <ip-address-gw-val>
+				- delete a route
+				- "gw" is for gateway (and <ip-address-gw-val> is the address for the gateway)
+				- example:
+					- route del -net 192.168.117.0 netmask 255.255.255.0 gw 192.168.115.1
+	- the "nmcli" utility
+		- is a command-line tool for controlling NetworkManager and reporting network status
+		- example usages
+			- nmcli device status
+				- get status of your devices
+	- the "ip" utility
+		- show/manipulate routing, network devices, and interfaces
+		- example usages:
+			- ip address show
+				- show information on network interfaces
+			- ip neighbor show
+				- show ARP cache
+			- ip route show
+				- show route table entries
+	- the "ss" utility
+		- another utility to investigate sockets

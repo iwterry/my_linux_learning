@@ -1,0 +1,55 @@
+
+***** Aggregate Sales Totals by Month and Item *******
+
+ItemId|Jan Totals|Feb Totals|Mar Totals
+Item_1|450|1130|1040
+Item_2|1710|1770|950
+Item_3|1030|1120|960
+Item_4|750|1290|1830
+Item_5|825|1055|1040
+Item_6|425|415|800
+Item_7|255|150|400
+
+***** Aggregate Sales Totals by Month *******
+
+ItemId|Totals
+Item_1|2620
+Item_2|4430
+Item_3|3110
+Item_4|3870
+Item_5|2920
+Item_6|1640
+Item_7|805
+
+***** Aggregate Item Counts *******
+
+ItemId|Counts
+Item_1|2
+Item_2|3
+Item_3|3
+Item_4|3
+Item_5|2
+Item_6|1
+Item_7|1
+
+***** Average Sales by Month and Item *******
+
+ItemId|Jan Avg|Feb Avg|Mar Avg
+Item_1|225|565|520
+Item_2|570|590|316.667
+Item_3|343.333|373.333|320
+Item_4|250|430|610
+Item_5|412.5|527.5|520
+Item_6|425|415|800
+Item_7|255|150|400
+
+***** Total Average Sales by Item *******
+
+ItemId|Total Avg
+Item_1|1310
+Item_2|1476.67
+Item_3|1036.67
+Item_4|1290
+Item_5|1460
+Item_6|1640
+Item_7|805

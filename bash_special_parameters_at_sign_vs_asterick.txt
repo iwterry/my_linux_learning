@@ -1,0 +1,145 @@
+About: just analyzing the difference between $* and $@ (both bash special parameters in a shell script) with and without being enclosed in double quoation marks.
+
+%%%%%%%%%%%%%%%%%%%%% the program %%%%%%%%%%%%%%%%%
+#!/bin/bash
+
+echo '###### IFS unset #####'
+unset IFS
+echo '----- "$@" -----'
+for item in "$@"; do echo "item: $item"; done
+echo '----- $@ ------'
+for item in $@; do echo "item: $item"; done
+echo '----- "$*" -----'
+for item in "$*"; do echo "item: $item"; done
+echo '----- $* -----'
+for item in $*; do echo "item: $item"; done
+
+echo
+
+echo '###### IFS set to null #######'
+IFS=
+echo '----- "$@" -----'
+for item in "$@"; do echo "item: $item"; done
+echo '----- $@ ------'
+for item in $@; do echo "item: $item"; done
+echo '----- "$*" -----'
+for item in "$*"; do echo "item: $item"; done
+echo '----- $* -----'
+for item in $*; do echo "item: $item"; done
+
+echo
+
+echo '###### IFS set to _:_ #######'
+IFS="_;_"
+echo '----- "$@" -----'
+for item in "$@"; do echo "item: $item"; done
+echo '----- $@ ------'
+for item in $@; do echo "item: $item"; done
+echo '----- "$*" -----'
+for item in "$*"; do echo "item: $item"; done
+echo '----- $* -----'
+for item in $*; do echo "item: $item"; done
+
+unset IFS
+
+
+
+%%%%%%%%%%%%%%%%%% execution and output of program %%%%%%%%%%%%%%%%
+
+./basic_script.sh "one two" "three_four"
+###### IFS unset #####
+----- "$@" -----
+item: one two
+item: three_four
+----- $@ ------
+item: one
+item: two
+item: three_four
+----- "$*" -----
+item: one two three_four
+----- $* -----
+item: one
+item: two
+item: three_four
+
+###### IFS set to null #######
+----- "$@" -----
+item: one two
+item: three_four
+----- $@ ------
+item: one two
+item: three_four
+----- "$*" -----
+item: one twothree_four
+----- $* -----
+item: one two
+item: three_four
+
+###### IFS set to _:_ #######
+----- "$@" -----
+item: one two
+item: three_four
+----- $@ ------
+item: one two
+item: three
+item: four
+----- "$*" -----
+item: one two_three_four
+----- $* -----
+item: one two
+item: three
+item: four
+
+%%%%%%%%%%%%%%%%%%% documentation from "man bash" special parameters section %%%%%%%%%%%%%%%%%%%
+
+       *      Expands to the positional parameters, starting from  one.   When
+              the  expansion  is not within double quotes, each positional pa‐
+              rameter expands to a separate word.  In  contexts  where  it  is
+              performed, those words are subject to further word splitting and
+              pathname expansion.  When the  expansion  occurs  within  double
+              quotes,  it  expands to a single word with the value of each pa‐
+              rameter separated by the first  character  of  the  IFS  special
+              variable.   That  is, "$*" is equivalent to "$1c$2c...", where c
+              is the first character of the value of the IFS variable.  If IFS
+              is  unset,  the  parameters  are separated by spaces.  If IFS is
+              null, the parameters are joined without intervening separators.
+
+       @      Expands to the positional parameters,  starting  from  one.   In
+              contexts  where  word  splitting is performed, this expands each
+              positional parameter to a separate word; if  not  within  double
+              quotes,  these words are subject to word splitting.  In contexts
+              where word splitting is not performed, this expands to a  single
+              word  with each positional parameter separated by a space.  When
+              the expansion occurs within double quotes,  each  parameter  ex‐
+              pands  to  a separate word.  That is, "$@" is equivalent to "$1"
+              "$2" ...  If the double-quoted expansion occurs within  a  word,
+              the  expansion  of the first parameter is joined with the begin‐
+              ning part of the original word, and the expansion  of  the  last
+              parameter  is  joined  with  the last part of the original word.
+              When there are no positional parameters, "$@" and $@  expand  to
+              nothing (i.e., they are removed).
+
+
+
+%%%%%%%%%%%%%%%%%% my analysis based on the results of the program %%%%%%%%%%%%%%%%%%%%%
+	- $* and $@ are the same when not enclosed in quotation marks
+		- each positional parameter is split into a separate word, and each word is subject to further splitting based on the value of the special variable IFS
+			- if IFS is unset, spaces split the word into further words
+			- if IFS is null, no split occurs on the word
+			- otherwise, the first character of IFS is used to split the word into further words
+	- $* and $@ are different when enclosed in double quotation marks
+		- "$*"
+			- positional parameters are not split into words, but instead we get one word that consists of the positional parameters joined together based on the value of the special variable IFS
+				- if IFS is unset, join positional parameters by a space
+					 - example: <value-of-$1> <value-of-$2> <value-of-$3>
+				- if IFS is null, join positional parameters together without any separation between the positional parameters
+					- example: <value-of-$1><value-of-$2><value-of-$3>
+				- otherwise, join the positional parameters together using the first character of IFS
+					- example: <value-of-$1><first-character-IFS><value-of-$2><first-character-IFS><value-of-$3>
+		- "$@"
+			- each positional parameter is split into a separate word, but each word is not further split
+
+ 
+
+
+
